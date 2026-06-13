@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserPlus, 
-  CreditCard, 
-  Megaphone, 
-  Settings, 
-  Activity, 
-  PlaySquare, 
-  PersonStanding, 
+import {
+  LayoutDashboard,
+  Users,
+  UserPlus,
+  CreditCard,
+  Megaphone,
+  Activity,
+  PersonStanding,
   Dumbbell,
+  ListChecks,
+  Tv2,
   X,
   ChevronLeft,
   ChevronRight,
@@ -28,14 +28,18 @@ const MENU_ITEMS = [
   { name: "Anuncios", href: "/announcements", icon: Megaphone },
 ];
 
+const FITNESS_ITEMS = [
+  { name: "Ejercicios", href: "/exercises", icon: Dumbbell },
+  { name: "Rutinas", href: "/routines", icon: ListChecks },
+  { name: "Contenido App", href: "/content", icon: Tv2 },
+];
+
 const ADMIN_ITEMS = [
   { name: "Precios", href: "/pricing", icon: CircleDollarSign },
   { name: "Roles", href: "/roles", icon: ShieldCheck },
 ];
 
 const UPCOMING_ITEMS = [
-  { name: "Rutinas", icon: Dumbbell },
-  { name: "Ejercicios", icon: PlaySquare },
   { name: "Cuerpo 3D", icon: PersonStanding },
   { name: "Progreso", icon: Activity },
 ];
@@ -110,6 +114,40 @@ export function Sidebar({
                     className={`flex items-center px-3 py-2.5 rounded-lg transition-colors group relative ${
                       isActive 
                         ? "bg-olimpo-gold/10 text-olimpo-gold" 
+                        : "text-olimpo-text hover:bg-olimpo-surface-light"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 shrink-0" />
+                    {(!desktopCollapsed || mobileOpen) && (
+                      <span className="font-medium ml-3 truncate">{item.name}</span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Fitness Menu */}
+        <div>
+          {(!desktopCollapsed || mobileOpen) && (
+            <p className="px-4 text-[10px] font-semibold text-olimpo-text-muted uppercase tracking-wider mb-2">
+              Fitness
+            </p>
+          )}
+          <ul className="space-y-1 px-2">
+            {FITNESS_ITEMS.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+              const Icon = item.icon;
+              return (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    title={item.name}
+                    onClick={() => mobileOpen && onCloseMobile()}
+                    className={`flex items-center px-3 py-2.5 rounded-lg transition-colors group relative ${
+                      isActive
+                        ? "bg-olimpo-gold/10 text-olimpo-gold"
                         : "text-olimpo-text hover:bg-olimpo-surface-light"
                     }`}
                   >

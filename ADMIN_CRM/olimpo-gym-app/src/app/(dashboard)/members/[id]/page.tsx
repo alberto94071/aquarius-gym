@@ -1,12 +1,56 @@
 import { getMemberById } from "@/actions/members";
-import { ArrowLeft, User, Calendar, CreditCard, Clock, ShieldCheck, Dumbbell } from "lucide-react";
+
+const MONTHS_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MONTHS_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function periodLabel(periodStart: string | null, periodEnd: string | null): string {
+  if (!periodStart || !periodEnd) return "—";
+  const d1 = new Date(periodStart + "T00:00:00");
+  d1.setDate(d1.getDate() + 1);
+  const d2 = new Date(periodEnd + "T00:00:00");
+  if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth()) {
+    return `${MONTHS_FULL[d1.getMonth()]} ${d1.getFullYear()}`;
+  }
+  if (d1.getFullYear() === d2.getFullYear()) {
+    return `${MONTHS_SHORT[d1.getMonth()]} – ${MONTHS_SHORT[d2.getMonth()]} ${d2.getFullYear()}`;
+  }
+  return `${MONTHS_SHORT[d1.getMonth()]} ${d1.getFullYear()} – ${MONTHS_SHORT[d2.getMonth()]} ${d2.getFullYear()}`;
+}
+
+function getPaidMonths(paymentHistory: { periodStart: string | null; periodEnd: string | null }[]): string[] {
+  const paid: string[] = [];
+  for (const p of paymentHistory) {
+    if (!p.periodStart || !p.periodEnd) continue;
+    const d1 = new Date(p.periodStart + "T00:00:00");
+    d1.setDate(d1.getDate() + 1);
+    const d2 = new Date(p.periodEnd + "T00:00:00");
+    const c = new Date(d1.getFullYear(), d1.getMonth(), 1);
+    while (c <= d2) {
+      const k = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}`;
+      if (!paid.includes(k)) paid.push(k);
+      c.setMonth(c.getMonth() + 1);
+    }
+  }
+  return paid;
+}
+import { ArrowLeft, Calendar, CreditCard, Clock, ShieldCheck, Dumbbell, Mail, ListChecks, BarChart2 } from "lucide-react";
 import { MemberPhotoEdit } from "@/components/members/MemberPhotoEdit";
+import { ResetPasswordButton } from "@/components/members/ResetPasswordButton";
+import { MemberQR } from "@/components/members/MemberQR";
+import { RegisterPaymentModal } from "@/components/members/RegisterPaymentModal";
+import { AssignRoutineModal } from "@/components/members/AssignRoutineModal";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getMemberActiveRoutine } from "@/actions/routines";
+import { getRoutines } from "@/actions/routines";
 
 export default async function MemberDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const member = await getMemberById(id);
+  const [member, activeRoutine, allRoutines] = await Promise.all([
+    getMemberById(id),
+    getMemberActiveRoutine(id),
+    getRoutines(),
+  ]);
 
   if (!member) notFound();
 
@@ -19,10 +63,13 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
         <Link href="/members" className="inline-flex items-center gap-2 text-olimpo-text-muted hover:text-olimpo-gold transition-colors font-medium">
           <ArrowLeft className="w-4 h-4" /> Volver a Miembros
         </Link>
-        <button className="bg-olimpo-gold text-black px-4 py-2 rounded-lg font-bold shadow-lg hover:scale-105 transition-transform flex items-center gap-2">
-          <CreditCard className="w-4 h-4" />
-          Registrar Pago / Renovar
-        </button>
+        <RegisterPaymentModal
+          memberId={id}
+          memberName={member.name}
+          memberCode={member.code}
+          defaultAmount={member.price}
+          membershipEnd={member.membershipEnd}
+        />
       </div>
       
       {/* Perfil Header */}
@@ -39,16 +86,23 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
             <ShieldCheck className="w-4 h-4" /> Código: {member.code} ({member.gymName})
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-3 items-end">
           <div className="text-center md:text-right">
             <p className="text-sm text-olimpo-text-muted">Teléfono</p>
             <p className="font-medium text-olimpo-text">{member.phone}</p>
           </div>
+          {member.email && member.email !== "sin_correo@olimpo.com" && (
+            <div className="text-center md:text-right">
+              <p className="text-sm text-olimpo-text-muted flex items-center gap-1 justify-end"><Mail className="w-3 h-3" /> Correo</p>
+              <p className="font-medium text-olimpo-text text-sm">{member.email}</p>
+            </div>
+          )}
+          <ResetPasswordButton memberId={id} />
         </div>
       </div>
 
       {/* Info Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card-olimpo p-6 rounded-2xl">
           <div className="flex items-center gap-3 mb-4">
             <Dumbbell className="w-5 h-5 text-olimpo-gold" />
@@ -98,6 +152,77 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
             )}
           </div>
         </div>
+
+        <MemberQR code={member.code} name={member.name} />
+      </div>
+
+      {/* Paid months summary */}
+      {member.payments.length > 0 && (() => {
+        const paidMonths = getPaidMonths(member.payments);
+        const nextDate = new Date(member.membershipEnd + "T00:00:00");
+        const next = new Date(nextDate.getFullYear(), nextDate.getMonth() + 1, 1);
+        return (
+          <div className="card-olimpo rounded-2xl p-6">
+            <h3 className="text-sm font-semibold text-olimpo-text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-olimpo-gold" /> Meses de membresía
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {paidMonths.map((m) => {
+                const [y, mo] = m.split("-").map(Number);
+                return (
+                  <span key={m} className="px-3 py-1.5 rounded-full text-xs font-semibold bg-olimpo-green/15 text-olimpo-green border border-olimpo-green/30">
+                    {MONTHS_SHORT[mo - 1]} {y}
+                  </span>
+                );
+              })}
+              <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-olimpo-gold/15 text-olimpo-gold border border-olimpo-gold/40 flex items-center gap-1">
+                → {MONTHS_SHORT[next.getMonth()]} {next.getFullYear()}
+              </span>
+            </div>
+            <p className="text-xs text-olimpo-text-muted mt-3">
+              Pagado hasta el <strong className="text-olimpo-text">{new Date(member.membershipEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "numeric", month: "long", year: "numeric" })}</strong>.
+              Próximo cobro: <strong className="text-olimpo-gold">{MONTHS_FULL[next.getMonth()]} {next.getFullYear()}</strong>
+            </p>
+          </div>
+        );
+      })()}
+
+      {/* Routine Section */}
+      <div className="card-olimpo rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-serif font-bold text-olimpo-text flex items-center gap-2">
+            <ListChecks className="w-5 h-5 text-olimpo-gold" /> Rutina Asignada
+          </h3>
+          <AssignRoutineModal
+            memberId={id}
+            routines={allRoutines}
+            currentRoutineId={activeRoutine?.id ?? null}
+          />
+        </div>
+        {activeRoutine ? (
+          <div>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-1">
+                <p className="font-bold text-olimpo-gold text-base">{activeRoutine.name}</p>
+                {activeRoutine.dayLabel && <p className="text-xs text-olimpo-text-muted mt-0.5">{activeRoutine.dayLabel}</p>}
+                {activeRoutine.description && <p className="text-sm text-olimpo-text-muted mt-1">{activeRoutine.description}</p>}
+              </div>
+              <Link href={`/routines/${activeRoutine.id}`} className="text-xs text-olimpo-gold hover:underline shrink-0">Ver rutina →</Link>
+            </div>
+            {activeRoutine.exercises.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {activeRoutine.exercises.map(({ re, exercise }) => (
+                  <span key={re.id} className="px-2.5 py-1 rounded-full text-xs bg-olimpo-surface-light text-olimpo-text flex items-center gap-1.5">
+                    <BarChart2 className="w-3 h-3 text-olimpo-gold" />
+                    {exercise.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-olimpo-text-muted text-sm">Este miembro no tiene una rutina asignada. Asígnale una para que pueda verla en la app.</p>
+        )}
       </div>
 
       {/* Payment History */}
@@ -116,9 +241,9 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-olimpo-surface-light/30 border-b border-olimpo-surface-light">
-                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Monto Total</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Período Pagado</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Fecha de pago</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Monto</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Meses cubiertos</th>
                   <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Notas</th>
                 </tr>
               </thead>
@@ -126,16 +251,22 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
                 {member.payments.map((p) => (
                   <tr key={p.id} className="hover:bg-olimpo-surface-light/10 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {new Date(p.paymentDate).toLocaleDateString()}
+                      {new Date(p.paymentDate + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-olimpo-green">
                       Q {p.amount}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-olimpo-text-muted">
-                      {p.periodStart ? new Date(p.periodStart).toLocaleDateString() : '-'} al {p.periodEnd ? new Date(p.periodEnd).toLocaleDateString() : '-'}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {p.periodEnd ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-olimpo-green/15 text-olimpo-green border border-olimpo-green/30">
+                          {periodLabel(p.periodStart, p.periodEnd)}
+                        </span>
+                      ) : (
+                        <span className="text-olimpo-text-muted">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-olimpo-text-muted">
-                      {p.notes || "-"}
+                      {p.notes || "—"}
                     </td>
                   </tr>
                 ))}

@@ -1,5 +1,6 @@
 export type MemberStatus = "activo" | "mora" | "vencido" | "bloqueado";
 export type Plan = "mensual" | "trimestral" | "anual";
+export type MuscleGroup = "pecho" | "espalda" | "hombros" | "biceps" | "triceps" | "piernas" | "gluteos" | "core" | "cardio" | "full_body";
 
 export interface Gym {
   id: string;
@@ -24,6 +25,8 @@ export interface Payment {
   date: string;
   method: "efectivo" | "transferencia";
   notes?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }
 
 export interface Member {
@@ -71,4 +74,55 @@ export interface AuthMember {
   gym: { id: string; name: string | null };
   status: MemberStatus;
   photoUrl?: string | null;
+}
+
+// ─── Fitness / Routines ──────────────────────────────────────────────────────
+
+export interface RoutineExercise {
+  routineExerciseId: string;
+  exerciseId: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+  sets: string;
+  rest: string;
+  notes: string;
+  imageUrl: string | null;
+  sortOrder: number;
+}
+
+export interface Routine {
+  id: string;
+  name: string;
+  description: string | null;
+  dayLabel: string | null;
+  exercises: RoutineExercise[];
+}
+
+export interface SetLog {
+  exerciseId: string;
+  setIndex: number;
+  weight: string;
+  reps: string;
+  completed: boolean;
+}
+
+export interface WorkoutSession {
+  id: string;
+  routineId: string;
+  sessionDate: string;
+  currentPhase: "warmup" | "exercise" | "stretch";
+  completedAt: string | null;
+  setLogs: SetLog[];
+}
+
+// ─── Home Content ─────────────────────────────────────────────────────────────
+
+export interface HomeContentItem {
+  id: string;
+  type: "video" | "article" | "tip" | "image";
+  title: string;
+  body: string | null;
+  url: string | null;
+  imageUrl: string | null;
+  sortOrder: number;
 }

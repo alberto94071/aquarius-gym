@@ -116,6 +116,8 @@ export async function GET(req: NextRequest) {
         date: payments.paymentDate,
         method: payments.paymentMethod,
         notes: payments.notes,
+        periodStart: payments.periodStart,
+        periodEnd: payments.periodEnd,
       })
       .from(payments)
       .where(eq(payments.memberId, auth.memberId))

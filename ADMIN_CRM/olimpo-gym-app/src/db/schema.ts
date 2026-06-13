@@ -14,7 +14,7 @@ import {
 import { relations } from "drizzle-orm";
 
 // Enums
-export const roleEnum = pgEnum("role", ["admin", "secretaria_rb", "secretaria_sb"]);
+export const roleEnum = pgEnum("role", ["admin", "secretaria_rb", "secretaria_sb", "coach"]);
 export const sexEnum = pgEnum("sex", ["M", "F"]);
 export const planEnum = pgEnum("plan", ["mensual", "trimestral", "anual"]);
 export const statusEnum = pgEnum("status", ["activo", "mora", "vencido", "bloqueado"]);
@@ -104,6 +104,7 @@ export const members = pgTable("members", {
   paymentMethod: paymentMethodEnum("payment_method"),
   lastVisit: date("last_visit"),
   photoUrl: varchar("photo_url", { length: 1024 }),
+  password: varchar("password", { length: 255 }),
   notes: text("notes"),
   registeredBy: uuid("registered_by").references(() => systemUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -185,3 +186,100 @@ export const groupsRelations = relations(groups, ({ one }) => ({
     references: [members.id],
   }),
 }));
+
+// ─── Fitness / Routines ──────────────────────────────────────────────────────
+
+export const muscleGroupEnum = pgEnum("muscle_group", [
+  "pecho", "espalda", "hombros", "biceps", "triceps",
+  "piernas", "gluteos", "core", "cardio", "full_body",
+]);
+
+export const contentTypeEnum = pgEnum("content_type", ["video", "article", "tip", "image"]);
+
+// Exercise bank
+export const exercises = pgTable("exercises", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gymId: uuid("gym_id").references(() => gyms.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  muscleGroup: muscleGroupEnum("muscle_group").notNull(),
+  defaultSets: varchar("default_sets", { length: 50 }).default("3 x 10-12"),
+  defaultRest: varchar("default_rest", { length: 50 }).default("2 min"),
+  notes: text("notes"),
+  imageUrl: varchar("image_url", { length: 1024 }),
+  createdBy: uuid("created_by").references(() => systemUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Routine templates
+export const routines = pgTable("routines", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  dayLabel: varchar("day_label", { length: 100 }),
+  createdBy: uuid("created_by").references(() => systemUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Exercises inside a routine (ordered)
+export const routineExercises = pgTable("routine_exercises", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  routineId: uuid("routine_id")
+    .references(() => routines.id, { onDelete: "cascade" })
+    .notNull(),
+  exerciseId: uuid("exercise_id").references(() => exercises.id).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  sets: varchar("sets", { length: 50 }),
+  rest: varchar("rest", { length: 50 }),
+  notes: text("notes"),
+});
+
+// Routine assigned to a member
+export const memberRoutines = pgTable("member_routines", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  memberId: uuid("member_id").references(() => members.id).notNull(),
+  routineId: uuid("routine_id").references(() => routines.id).notNull(),
+  assignedBy: uuid("assigned_by").references(() => systemUsers.id),
+  assignedAt: date("assigned_at").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+// A single workout session for a member
+export const workoutSessions = pgTable("workout_sessions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  memberId: uuid("member_id").references(() => members.id).notNull(),
+  routineId: uuid("routine_id").references(() => routines.id).notNull(),
+  sessionDate: date("session_date").notNull(),
+  currentPhase: varchar("current_phase", { length: 20 }).default("warmup").notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Individual set logs within a session
+export const workoutSetLogs = pgTable("workout_set_logs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  sessionId: uuid("session_id")
+    .references(() => workoutSessions.id, { onDelete: "cascade" })
+    .notNull(),
+  exerciseId: uuid("exercise_id").references(() => exercises.id).notNull(),
+  setIndex: integer("set_index").notNull(),
+  weight: varchar("weight", { length: 50 }),
+  reps: varchar("reps", { length: 50 }),
+  completed: boolean("completed").default(false).notNull(),
+});
+
+// Home screen content (videos, articles, tips, images)
+export const homeContent = pgTable("home_content", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gymId: uuid("gym_id").references(() => gyms.id),
+  type: contentTypeEnum("type").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body"),
+  url: varchar("url", { length: 1024 }),
+  imageUrl: varchar("image_url", { length: 1024 }),
+  published: boolean("published").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  createdBy: uuid("created_by").references(() => systemUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});

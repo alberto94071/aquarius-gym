@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { members, payments, systemUsers, groups } from "@/db/schema";
+import { members, payments, systemUsers, groups, gyms } from "@/db/schema";
 import { eq, ilike, or, and, desc } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
@@ -48,62 +48,69 @@ export async function registerPayment(data: {
   const [member] = await db.select().from(members).where(eq(members.id, data.memberId));
   if (!member) throw new Error("Miembro no encontrado");
 
-  await db.transaction(async (tx) => {
-    const today = new Date();
-    let newEndDate = new Date(member.membershipEnd);
-    
-    if (data.paymentType === "mensualidad" && data.paymentMonth) {
-      const [yyyy, mm] = data.paymentMonth.split("-").map(Number);
-      
-      // newEndDate should be the last day of the selected month
-      newEndDate = new Date(yyyy, mm, 0);
+  const today = new Date();
+  let newEndDate = new Date(member.membershipEnd);
 
-      // Update the member
-      await tx.update(members)
-        .set({ 
-          membershipEnd: newEndDate.toISOString().split("T")[0],
-          status: "activo", // Clear any mora status
-          paid: true
-        })
-        .where(eq(members.id, member.id));
+  if (data.paymentType === "mensualidad" && data.paymentMonth) {
+    const [yyyy, mm] = data.paymentMonth.split("-").map(Number);
+    // Last day of the selected month
+    newEndDate = new Date(yyyy, mm, 0);
 
-      // Also update the group if this is a group payment? 
-      // Wait, if it's a representative paying, we should update all group members!
-      if (member.groupId && member.isRepresentative) {
-         await tx.update(members)
-          .set({
-            membershipEnd: newEndDate.toISOString().split("T")[0],
-            status: "activo",
-            paid: true
-          })
-          .where(eq(members.groupId, member.groupId));
-         
-         await tx.update(groups)
-          .set({ paidFull: true })
-          .where(eq(groups.id, member.groupId));
-      }
+    // ── Guard: prevent paying a month already covered ──────────────────
+    const currentEnd = new Date(member.membershipEnd + "T00:00:00");
+    if (newEndDate <= currentEnd) {
+      const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      throw new Error(
+        `${MONTHS_ES[mm - 1]} ${yyyy} ya está pagado. ` +
+        `La membresía vence el ${currentEnd.toLocaleDateString("es-GT", { day: "numeric", month: "long", year: "numeric" })}. ` +
+        `Selecciona un mes posterior.`
+      );
     }
+    // ───────────────────────────────────────────────────────────────────
 
-    // Insert payment record
-    await tx.insert(payments).values({
-      gymId: member.gymId,
-      memberId: member.id,
-      groupId: member.groupId,
-      amount: data.amount,
-      monthlyAmount: data.paymentType === "mensualidad" ? data.amount : "0",
-      cardAmount: data.paymentType === "reposicion_carne" ? data.amount : "0",
-      paymentDate: today.toISOString().split("T")[0],
-      paymentMethod: data.paymentMethod,
-      periodStart: data.paymentType === "mensualidad" ? member.membershipEnd : null,
-      periodEnd: data.paymentType === "mensualidad" ? newEndDate.toISOString().split("T")[0] : null,
-      registeredBy: currentUser.id,
-      notes: data.notes || (data.paymentType === "mensualidad" ? "Renovación de membresía" : "Reposición de carné"),
-    });
+    await db.update(members)
+      .set({
+        membershipEnd: newEndDate.toISOString().split("T")[0],
+        status: "activo",
+        paid: true,
+      })
+      .where(eq(members.id, member.id));
+
+    // If representative of a group, extend all group members too
+    if (member.groupId && member.isRepresentative) {
+      await db.update(members)
+        .set({
+          membershipEnd: newEndDate.toISOString().split("T")[0],
+          status: "activo",
+          paid: true,
+        })
+        .where(eq(members.groupId, member.groupId));
+
+      await db.update(groups)
+        .set({ paidFull: true })
+        .where(eq(groups.id, member.groupId));
+    }
+  }
+
+  await db.insert(payments).values({
+    gymId: member.gymId,
+    memberId: member.id,
+    groupId: member.groupId,
+    amount: data.amount,
+    monthlyAmount: data.paymentType === "mensualidad" ? data.amount : "0",
+    cardAmount: data.paymentType === "reposicion_carne" ? data.amount : "0",
+    paymentDate: today.toISOString().split("T")[0],
+    paymentMethod: data.paymentMethod,
+    periodStart: data.paymentType === "mensualidad" ? member.membershipEnd : null,
+    periodEnd: data.paymentType === "mensualidad" ? newEndDate.toISOString().split("T")[0] : null,
+    registeredBy: currentUser.id,
+    notes: data.notes || (data.paymentType === "mensualidad" ? "Renovación de membresía" : "Reposición de carné"),
   });
 
   revalidatePath("/payments");
   revalidatePath("/members");
   revalidatePath("/groups");
+  revalidatePath(`/members/${data.memberId}`);
   return { success: true };
 }
 
@@ -123,5 +130,49 @@ export async function getGroupDetailsForPayment(groupId: string) {
     group,
     groupMembers,
     totalAmount: totalAmount.toString()
+  };
+}
+
+export async function getMemberPaymentInfo(memberId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autorizado");
+
+  const [row] = await db
+    .select({ member: members, enrollmentFee: gyms.enrollmentFee })
+    .from(members)
+    .innerJoin(gyms, eq(members.gymId, gyms.id))
+    .where(eq(members.id, memberId));
+
+  if (!row) throw new Error("Miembro no encontrado");
+
+  const recentPayments = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.memberId, memberId))
+    .orderBy(desc(payments.paymentDate))
+    .limit(6);
+
+  const today = new Date();
+  const endDate = new Date(row.member.membershipEnd + "T00:00:00");
+
+  // Next month to pay = month after membershipEnd
+  const next = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+  const nextMonthToPay = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
+
+  // Days since membership expired (0 if still active)
+  const daysOverdue = today > endDate
+    ? Math.floor((today.getTime() - endDate.getTime()) / 86400000)
+    : 0;
+
+  // Charge enrollment fee if member has been away >180 days (~6 months)
+  const chargeEnrollment = daysOverdue > 180;
+
+  return {
+    membershipEnd: row.member.membershipEnd,
+    nextMonthToPay,
+    daysOverdue,
+    chargeEnrollment,
+    enrollmentFee: row.enrollmentFee,
+    recentPayments,
   };
 }
