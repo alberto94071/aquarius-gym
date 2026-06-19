@@ -30,7 +30,7 @@ export default async function RolesPage() {
             Roles y Accesos
           </h2>
           <p className="text-sm sm:text-base text-olimpo-text-muted mt-1">
-            Administra qué usuarios de Google tienen acceso al panel de Olimpo Gym.
+            Administra qué usuarios de Google tienen acceso al panel de Aquarius Gym.
           </p>
         </div>
         

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     if (!row) {
       return NextResponse.json(
-        { error: "No estás inscrito en Olimpo Gym" },
+        { error: "No estás inscrito en Aquarius Gym" },
         { status: 404 }
       );
     }

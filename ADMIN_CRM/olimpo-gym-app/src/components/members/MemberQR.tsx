@@ -22,7 +22,7 @@ export function MemberQR({ code, name }: { code: string; name: string }) {
       </style></head>
       <body>
         <div class="card">
-          <h1>OLIMPO GYM</h1>
+          <h1>AQUARIUS GYM</h1>
           <p>${name}</p>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${document.getElementById("qr-svg-" + code)?.getAttribute("viewBox") || "0 0 200 200"}" width="200" height="200">
             ${document.getElementById("qr-svg-" + code)?.innerHTML || ""}

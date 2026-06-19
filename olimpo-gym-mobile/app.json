@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Olimpo Gym",
+    "name": "Aquarius Gym",
     "slug": "olimpo-gym-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,7 +14,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0A0A0A",
+        "backgroundColor": "#080C10",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png"
       },
@@ -40,7 +40,7 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#C5A55A",
+          "color": "#00D4E8",
           "defaultChannel": "default"
         }
       ]

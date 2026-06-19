@@ -52,7 +52,7 @@ export default function LoginScreen() {
       } else if (err instanceof ApiError) {
         const msg =
           err.status === 404
-            ? "No estás inscrito en Olimpo Gym. Contacta a tu sede."
+            ? "No estás inscrito en Aquarius Gym. Contacta a tu sede."
             : err.message;
         Alert.alert("Acceso denegado", msg);
       } else {
@@ -77,7 +77,7 @@ export default function LoginScreen() {
           err.status === 401
             ? "Correo o contraseña incorrectos."
             : err.status === 404
-            ? "No estás inscrito en Olimpo Gym. Contacta a tu sede."
+            ? "No estás inscrito en Aquarius Gym. Contacta a tu sede."
             : err.message;
         Alert.alert("Acceso denegado", msg);
       } else {
@@ -99,10 +99,10 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View style={styles.logoArea}>
-          <Text style={styles.logoTitle}>OLIMPO</Text>
+          <Text style={styles.logoTitle}>AQUARIUS</Text>
           <Text style={styles.logoSubtitle}>GYM</Text>
           <View style={styles.divider} />
-          <Text style={styles.tagline}>Forjando cuerpos. Construyendo leyendas.</Text>
+          <Text style={styles.tagline}>Entrena sin límites.</Text>
         </View>
 
         {/* Card */}

@@ -6,7 +6,7 @@ import { systemUsers, gyms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export const metadata = {
-  title: "Pagos y Renovaciones | Olimpo Gym",
+  title: "Pagos y Renovaciones | Aquarius Gym",
 };
 
 export default async function PaymentsPage() {

@@ -176,7 +176,7 @@ const QUOTES = [
   { text: "La disciplina es el puente entre metas y logros.", author: "Jim Rohn" },
   { text: "No cuentes los días. Haz que los días cuenten.", author: "Muhammad Ali" },
   { text: "El cuerpo logra lo que la mente cree.", author: "Anónimo" },
-  { text: "Forja tu cuerpo como los dioses del Olimpo forjaron el mundo.", author: "Olimpo Gym" },
+  { text: "El agua encuentra siempre su camino. Tú también lo encontrarás.", author: "Aquarius Gym" },
 ];
 
 function todayQuote() {
@@ -234,7 +234,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.headerSede}>OLIMPO GYM</Text>
+            <Text style={styles.headerSede}>AQUARIUS GYM</Text>
             <Text style={styles.headerGreeting}>
               Hola, {authMember?.name?.split(" ")[0] ?? "Atleta"} 👋
             </Text>
@@ -312,7 +312,7 @@ export default function HomeScreen() {
       {/* ─── Empty state ─── */}
       {content.length === 0 && (
         <View style={styles.emptyContent}>
-          <Text style={styles.emptyTitle}>El Olimpo te espera</Text>
+          <Text style={styles.emptyTitle}>Aquarius te espera</Text>
           <Text style={styles.emptySubtitle}>Pronto habrá videos motivacionales y artículos de salud para ti.</Text>
         </View>
       )}

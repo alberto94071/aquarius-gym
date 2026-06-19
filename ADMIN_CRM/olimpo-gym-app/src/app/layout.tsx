@@ -13,19 +13,19 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
-  title: "Olimpo Gym | Sistema Administrativo",
-  description: "Plataforma oficial de administración, gestión de miembros y pagos para Olimpo Gym.",
+  title: "Aquarius Gym | Sistema Administrativo",
+  description: "Plataforma oficial de administración, gestión de miembros y pagos para Aquarius Gym.",
   openGraph: {
-    title: "Olimpo Gym | CRM",
+    title: "Aquarius Gym | CRM",
     description: "Sistema de administración oficial. Control de acceso, pagos y miembros.",
     url: "https://crm-olimpo-gym.vercel.app",
-    siteName: "Olimpo Gym",
+    siteName: "Aquarius Gym",
     images: [
       {
         url: "https://crm-olimpo-gym.vercel.app/logo.jpeg",
         width: 800,
         height: 800,
-        alt: "Logotipo Oficial de Olimpo Gym",
+        alt: "Logotipo Oficial de Aquarius Gym",
       },
     ],
     locale: "es_GT",
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Olimpo Gym | CRM",
-    description: "Sistema de administración oficial para Olimpo Gym.",
+    title: "Aquarius Gym | CRM",
+    description: "Sistema de administración oficial para Aquarius Gym.",
     images: ["https://crm-olimpo-gym.vercel.app/logo.jpeg"],
   },
 };

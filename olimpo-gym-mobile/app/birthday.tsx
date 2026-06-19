@@ -43,7 +43,7 @@ export default function BirthdayScreen() {
         <Text style={styles.name}>{firstName}</Text>
         <Text style={styles.message}>
           Todo el equipo de{"\n"}
-          <Text style={styles.gymName}>Olimpo Gym</Text>
+          <Text style={styles.gymName}>Aquarius Gym</Text>
           {"\n"}te desea un día increíble.{"\n"}
           ¡Sigue siendo grande!
         </Text>

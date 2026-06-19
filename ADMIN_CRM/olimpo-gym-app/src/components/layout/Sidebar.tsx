@@ -77,7 +77,7 @@ export function Sidebar({
           </div>
           {(!desktopCollapsed || mobileOpen) && (
             <div className="flex flex-col justify-center">
-              <h2 className="font-serif font-bold text-olimpo-gold tracking-widest text-lg leading-tight truncate">OLIMPO</h2>
+              <h2 className="font-serif font-bold text-olimpo-gold tracking-widest text-lg leading-tight truncate">AQUARIUS</h2>
               <h2 className="font-serif font-bold text-olimpo-gold tracking-widest text-lg leading-tight truncate">GYM</h2>
             </div>
           )}

@@ -20,7 +20,7 @@ async function seed() {
         console.log('Actualizado prefijo de Río Blanco a OGRB');
       } else {
         const [gym] = await db.insert(schema.gyms).values({
-          name: 'Olimpo Gym - Río Blanco',
+          name: 'Aquarius Gym - Río Blanco',
           codePrefix: 'OGRB',
           address: 'Río Blanco',
           pricingMonthly: '150.00',
@@ -38,7 +38,7 @@ async function seed() {
     const existingSB = await db.select().from(schema.gyms).where(eq(schema.gyms.codePrefix, 'OGSB'));
     if (existingSB.length === 0) {
       const [gym] = await db.insert(schema.gyms).values({
-        name: 'Olimpo Gym - Sibilia',
+        name: 'Aquarius Gym - Sibilia',
         codePrefix: 'OGSB',
         address: 'Sibilia, Quetzaltenango',
         pricingMonthly: '150.00',

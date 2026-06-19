@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       await db.insert(memberNotifications).values({
         memberId: member.id,
         title: `¡Feliz cumpleaños, ${firstName}! 🎂`,
-        body: `Todo el equipo de Olimpo Gym te desea un día increíble. ¡Sigue siendo grande!`,
+        body: `Todo el equipo de Aquarius Gym te desea un día increíble. ¡Sigue siendo grande!`,
         type: "birthday",
         read: false,
       });
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
         await sendExpoPush(
           [sub.expoPushToken],
           `¡Feliz cumpleaños, ${firstName}! 🎂`,
-          `Todo el equipo de Olimpo Gym te desea un día increíble. ¡Sigue siendo grande!`,
+          `Todo el equipo de Aquarius Gym te desea un día increíble. ¡Sigue siendo grande!`,
           { type: "birthday", memberName: firstName }
         );
         sent++;

@@ -41,10 +41,10 @@ export default function LoginPage({ searchParams }: { searchParams?: { error?: s
       <div className="w-full max-w-md p-8 bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] z-10">
         <div className="flex flex-col items-center mb-6">
           <div className="w-24 h-24 rounded-full border-2 border-olimpo-gold/50 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(197,165,90,0.3)] overflow-hidden bg-black">
-            <img src="/logo.jpeg" alt="Olimpo Gym Logo" className="w-full h-full object-cover" />
+            <img src="/logo.jpeg" alt="Aquarius Gym Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-serif font-bold text-olimpo-gold tracking-widest text-center mt-2">
-            OLIMPO GYM
+            AQUARIUS GYM
           </h1>
           <p className="text-olimpo-text-muted mt-2 text-sm uppercase tracking-widest font-sans">
             Portal Administrativo
@@ -65,7 +65,7 @@ export default function LoginPage({ searchParams }: { searchParams?: { error?: s
               name="email"
               required 
               className="w-full bg-black/50 border border-olimpo-surface p-3 rounded-lg text-olimpo-text outline-none focus:border-olimpo-gold transition-colors"
-              placeholder="admin@olimpo.com"
+              placeholder="admin@aquariusgym.com"
             />
           </div>
           <div>

@@ -116,14 +116,14 @@ const CONTENT: Array<{
 
   {
     type: "article",
-    title: "Guía de nutrición para el miembro de Olimpo Gym",
+    title: "Guía de nutrición para el miembro de Aquarius Gym",
     body: "Para la mayoría de personas que entrenan 3-4 veces por semana con objetivo de composición corporal:\n\n✅ Proteína: 1.6-2g por kg de peso (huevo, pollo, frijol, atún, leche)\n✅ Carbohidratos: 3-5g/kg en días de entrenamiento (arroz, avena, plátano, tortilla)\n✅ Grasas saludables: aguacate, aceite de oliva, nueces\n✅ Agua: mínimo 2.5 litros diarios\n\nNo necesitas suplementos para empezar. Domina estos fundamentos y verás resultados en 8-12 semanas.",
     sortOrder: 31,
   },
   {
     type: "article",
     title: "¿Por qué los hombres y mujeres deben entrenar igual?",
-    body: "Mito: las mujeres deben levantar poco peso para no 'ponerse como hombres'. Realidad: las mujeres producen 10-20 veces menos testosterona que los hombres, por lo que ganar músculo voluminoso es biológicamente muy difícil para ellas.\n\nLevantar peso pesado para las mujeres significa:\n• Más tono muscular y definición\n• Mayor metabolismo (quema más grasa en reposo)\n• Huesos más densos (previene osteoporosis)\n• Mejor postura y reducción de dolor de espalda\n\nLas rutinas de Olimpo Gym están diseñadas para funcionar para todos, independientemente del género.",
+    body: "Mito: las mujeres deben levantar poco peso para no 'ponerse como hombres'. Realidad: las mujeres producen 10-20 veces menos testosterona que los hombres, por lo que ganar músculo voluminoso es biológicamente muy difícil para ellas.\n\nLevantar peso pesado para las mujeres significa:\n• Más tono muscular y definición\n• Mayor metabolismo (quema más grasa en reposo)\n• Huesos más densos (previene osteoporosis)\n• Mejor postura y reducción de dolor de espalda\n\nLas rutinas de Aquarius Gym están diseñadas para funcionar para todos, independientemente del género.",
     sortOrder: 32,
   },
   {
@@ -167,8 +167,8 @@ const CONTENT: Array<{
 
   {
     type: "notice",
-    title: "¡Bienvenido a Olimpo Gym!",
-    body: "<h2>¡Gracias por unirte a nuestra familia!</h2><p>En <b>Olimpo Gym</b> creemos que cada persona tiene el potencial de alcanzar su mejor versión. Nuestro equipo está aquí para apoyarte en cada paso del camino.</p><h3>¿Qué incluye tu membresía?</h3><ul><li>Acceso ilimitado a todas las instalaciones</li><li>Rutina personalizada asignada por tu coach</li><li>Seguimiento de tu progreso en la app</li><li>Contenido educativo y motivacional</li></ul><p style='color:#D4AF37;font-weight:bold;'>¡El camino al Olimpo empieza hoy!</p>",
+    title: "¡Bienvenido a Aquarius Gym!",
+    body: "<h2>¡Gracias por unirte a nuestra familia!</h2><p>En <b>Aquarius Gym</b> creemos que cada persona tiene el potencial de alcanzar su mejor versión. Nuestro equipo está aquí para apoyarte en cada paso del camino.</p><h3>¿Qué incluye tu membresía?</h3><ul><li>Acceso ilimitado a todas las instalaciones</li><li>Rutina personalizada asignada por tu coach</li><li>Seguimiento de tu progreso en la app</li><li>Contenido educativo y motivacional</li></ul><p style='color:#00D4E8;font-weight:bold;'>Entrena sin límites. ¡Aquarius te espera!</p>",
     pinned: true,
     sortOrder: 0,
   },

@@ -1,7 +1,7 @@
 /**
  * seed-exercises.ts
  *
- * Seeds the exercise bank and routine templates for Olimpo Gym.
+ * Seeds the exercise bank and routine templates for Aquarius Gym.
  * Run with:  npx tsx scripts/seed-exercises.ts
  *
  * Uses the free-exercise-db image CDN for reference images.
@@ -1465,7 +1465,7 @@ const routines: RoutineSeed[] = [
 
 async function seedExercisesAndRoutines() {
   try {
-    // Get Olimpo Gym — Río Blanco (first gym, or seed for both)
+    // Get Aquarius Gym — Río Blanco (first gym, or seed for both)
     const allGyms = await db.select().from(schema.gyms);
     if (allGyms.length === 0) {
       console.error("No se encontraron sedes. Ejecuta seed-gym.ts primero.");
