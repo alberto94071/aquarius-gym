@@ -120,13 +120,13 @@ export default async function GroupDetailsPage({ params }: { params: Promise<{ i
                   {group.payments.map((p) => (
                     <tr key={p.id} className="hover:bg-olimpo-surface-light/10 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {new Date(p.paymentDate).toLocaleDateString()}
+                        {new Date(p.paymentDate + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" })}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-olimpo-green">
                         Q {p.amount}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-xs text-olimpo-text-muted">
-                        {p.periodStart ? new Date(p.periodStart).toLocaleDateString() : '-'} al {p.periodEnd ? new Date(p.periodEnd).toLocaleDateString() : '-'}
+                        {p.periodStart ? new Date(p.periodStart + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" }) : '-'} al {p.periodEnd ? new Date(p.periodEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" }) : '-'}
                       </td>
                     </tr>
                   ))}

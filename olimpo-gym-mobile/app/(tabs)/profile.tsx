@@ -10,6 +10,7 @@ import {
   Switch,
 } from "react-native";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import Svg, { Path, Circle, Line } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
@@ -72,8 +73,17 @@ function LogoutIcon({ color = Colors.red, size = 18 }: { color?: string; size?: 
   );
 }
 
+function RulerIcon({ color = Colors.gold, size = 18 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M2 12h20M2 12l4-4M2 12l4 4M22 12l-4-4M22 12l-4 4" />
+    </Svg>
+  );
+}
+
 export default function ProfileScreen() {
   const { logout } = useAuth();
+  const router = useRouter();
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -154,6 +164,24 @@ export default function ProfileScreen() {
             value={member?.sex === "M" ? "Masculino" : "Femenino"}
             last
           />
+        </View>
+      </View>
+
+      {/* Body tracking */}
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>SEGUIMIENTO</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => router.push("/measurements" as never)}
+            activeOpacity={0.75}
+          >
+            <View style={styles.settingLeft}>
+              <RulerIcon />
+              <Text style={styles.settingText}>Mis medidas corporales</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -321,6 +349,8 @@ const styles = StyleSheet.create({
   },
   settingLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   settingText: { color: Colors.text, fontSize: 14 },
+
+  chevron: { color: Colors.dim, fontSize: 20, fontWeight: "300" },
 
   logoutBtn: {
     flexDirection: "row",

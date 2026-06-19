@@ -50,6 +50,23 @@ export async function createHomeContent(data: {
   return { success: true };
 }
 
+export async function updateHomeContent(id: string, data: {
+  type?: "video" | "article" | "tip" | "image" | "notice";
+  title?: string;
+  body?: string | null;
+  url?: string | null;
+  imageUrl?: string | null;
+  sortOrder?: number;
+  pinned?: boolean;
+}) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autorizado");
+
+  await db.update(homeContent).set(data).where(eq(homeContent.id, id));
+  revalidatePath("/content");
+  return { success: true };
+}
+
 export async function deleteHomeContent(id: string) {
   const session = await auth();
   if (!session?.user) throw new Error("No autorizado");

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createHomeContent, deleteHomeContent, toggleHomeContentPublished, toggleHomeContentPinned } from "@/actions/homeContent";
-import { Plus, Trash2, X, Eye, EyeOff, Video, FileText, Lightbulb, Image, Bell, Pin } from "lucide-react";
+import { createHomeContent, updateHomeContent, deleteHomeContent, toggleHomeContentPublished, toggleHomeContentPinned } from "@/actions/homeContent";
+import { Plus, Trash2, X, Eye, EyeOff, Video, FileText, Lightbulb, Image, Bell, Pin, Pencil } from "lucide-react";
 
 type ContentType = "video" | "article" | "tip" | "image" | "notice";
 
@@ -32,18 +32,13 @@ function getYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+const BLANK_FORM = { type: "video" as ContentType, title: "", body: "", url: "", imageUrl: "", sortOrder: "0", pinned: false };
+
 export function HomeContentClient({ items }: { items: ContentItem[] }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [form, setForm] = useState({
-    type: "video" as ContentType,
-    title: "",
-    body: "",
-    url: "",
-    imageUrl: "",
-    sortOrder: "0",
-    pinned: false,
-  });
+  const [form, setForm] = useState(BLANK_FORM);
   const [error, setError] = useState("");
   const [filterType, setFilterType] = useState<ContentType | "all">("all");
 
@@ -52,22 +47,49 @@ export function HomeContentClient({ items }: { items: ContentItem[] }) {
   const rest = filtered.filter((i) => !i.pinned);
   const displayed = [...pinned, ...rest];
 
+  function openEdit(item: ContentItem) {
+    setEditingId(item.id);
+    setForm({
+      type: item.type,
+      title: item.title,
+      body: item.body ?? "",
+      url: item.url ?? "",
+      imageUrl: item.imageUrl ?? "",
+      sortOrder: String(item.sortOrder),
+      pinned: item.pinned,
+    });
+    setError("");
+    setShowForm(true);
+  }
+
+  function openNew() {
+    setEditingId(null);
+    setForm(BLANK_FORM);
+    setError("");
+    setShowForm(true);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     startTransition(async () => {
       try {
-        await createHomeContent({
+        const payload = {
           type: form.type,
           title: form.title,
-          body: form.body || undefined,
-          url: form.url || undefined,
-          imageUrl: form.imageUrl || undefined,
+          body: form.body || null,
+          url: form.url || null,
+          imageUrl: form.imageUrl || null,
           sortOrder: parseInt(form.sortOrder) || 0,
           pinned: form.pinned,
-        });
-        setForm({ type: "video", title: "", body: "", url: "", imageUrl: "", sortOrder: "0", pinned: false });
+        };
+        if (editingId) {
+          await updateHomeContent(editingId, payload);
+        } else {
+          await createHomeContent({ ...payload, body: payload.body ?? undefined, url: payload.url ?? undefined, imageUrl: payload.imageUrl ?? undefined });
+        }
         setShowForm(false);
+        setEditingId(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error");
       }
@@ -102,7 +124,7 @@ export function HomeContentClient({ items }: { items: ContentItem[] }) {
           })}
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openNew}
           className="flex items-center gap-2 bg-olimpo-gold text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-olimpo-gold-light transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" /> Agregar Contenido
@@ -146,6 +168,14 @@ export function HomeContentClient({ items }: { items: ContentItem[] }) {
                   <div className="flex items-start gap-2 justify-between">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${cfg.color}`}>{cfg.label}</span>
                     <div className="flex items-center gap-1">
+                      {/* Edit */}
+                      <button
+                        onClick={() => openEdit(item)}
+                        className="text-olimpo-text-muted hover:text-olimpo-gold transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                       {/* Pin toggle */}
                       <button
                         onClick={() => startTransition(async () => { await toggleHomeContentPinned(item.id, !item.pinned); })}
@@ -186,7 +216,7 @@ export function HomeContentClient({ items }: { items: ContentItem[] }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-olimpo-surface border border-olimpo-surface-light rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-olimpo-surface-light sticky top-0 bg-olimpo-surface z-10">
-              <h2 className="font-bold text-olimpo-gold text-lg">Nuevo Contenido</h2>
+              <h2 className="font-bold text-olimpo-gold text-lg">{editingId ? "Editar Contenido" : "Nuevo Contenido"}</h2>
               <button onClick={() => setShowForm(false)} className="text-olimpo-text-muted hover:text-olimpo-text"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -294,7 +324,7 @@ export function HomeContentClient({ items }: { items: ContentItem[] }) {
                 disabled={pending}
                 className="w-full bg-olimpo-gold text-black font-bold py-3 rounded-lg hover:bg-olimpo-gold-light transition-colors disabled:opacity-50 text-sm"
               >
-                {pending ? "Guardando..." : "Publicar Contenido"}
+                {pending ? "Guardando..." : editingId ? "Guardar cambios" : "Publicar Contenido"}
               </button>
             </form>
           </div>

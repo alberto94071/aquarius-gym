@@ -64,7 +64,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </Link>
 
         {/* Morosos Card */}
-        <Link href="/members" className="card-olimpo border-greca p-6 rounded-2xl overflow-hidden block hover:-translate-y-1 transition-transform">
+        <Link href="/members?status=mora" className="card-olimpo border-greca p-6 rounded-2xl overflow-hidden block hover:-translate-y-1 transition-transform">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-olimpo-text-muted">En Mora</h3>
             <div className="p-2 bg-olimpo-red/10 rounded-lg">

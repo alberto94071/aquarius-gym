@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
-  ShieldCheck
+  ShieldCheck,
+  BarChart2,
 } from "lucide-react";
 
 const MENU_ITEMS = [
@@ -35,6 +36,7 @@ const FITNESS_ITEMS = [
 ];
 
 const ADMIN_ITEMS = [
+  { name: "Finanzas", href: "/finanzas", icon: BarChart2 },
   { name: "Precios", href: "/pricing", icon: CircleDollarSign },
   { name: "Roles", href: "/roles", icon: ShieldCheck },
 ];
