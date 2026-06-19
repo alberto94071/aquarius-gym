@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-olimpo-bg: #080C10;
-  --color-olimpo-surface: #0D1520;
-  --color-olimpo-surface-light: #122030;
-  --color-olimpo-gold: #00D4E8;
-  --color-olimpo-gold-light: #33DFEE;
-  --color-olimpo-gold-dark: #008FA0;
-  --color-olimpo-text: #E8F4F8;
-  --color-olimpo-text-muted: #6B8A99;
-  --color-olimpo-green: #4CAF50;
-  --color-olimpo-red: #E53935;
-  --color-olimpo-blue: #42A5F5;
-  --color-olimpo-purple: #AB47BC;
-  --color-olimpo-orange: #FF9800;
+  --color-olimpo-bg: #020617;
+  --color-olimpo-surface: #0b1329;
+  --color-olimpo-surface-light: #1c2541;
+  --color-olimpo-gold: #00f0ff;
+  --color-olimpo-gold-light: #66f5ff;
+  --color-olimpo-gold-dark: #00b0c0;
+  --color-olimpo-text: #f1f5f9;
+  --color-olimpo-text-muted: #94a3b8;
+  --color-olimpo-green: #10b981;
+  --color-olimpo-red: #f43f5e;
+  --color-olimpo-blue: #0ea5e9;
+  --color-olimpo-purple: #8b5cf6;
+  --color-olimpo-orange: #f97316;
   
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-cinzel), ui-serif, Georgia, serif;
@@ -29,10 +29,9 @@ body {
   font-family: var(--font-sans);
   background-color: var(--color-olimpo-bg);
   background-image: 
-    radial-gradient(ellipse at 20% 50%, rgba(0, 180, 216, 0.06) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 20%, rgba(0, 212, 232, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(0, 100, 160, 0.08) 0%, transparent 60%),
-    url('/back-app.jpg');
+    radial-gradient(ellipse at 85% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 15% 85%, rgba(0, 176, 192, 0.04) 0%, transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(2, 6, 23, 0.1) 0%, var(--color-olimpo-bg) 100%);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -47,34 +46,35 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Water/Cyan Glow for Cards */
 .card-olimpo {
-  background-color: rgba(13, 21, 32, 0.70);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(0, 212, 232, 0.20);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0, 212, 232, 0.02);
+  background-color: rgba(11, 19, 41, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.01);
   position: relative;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-olimpo:hover {
-  box-shadow: 0 0 25px rgba(0, 212, 232, 0.15), inset 0 0 20px rgba(0, 212, 232, 0.04);
-  border: 1px solid rgba(0, 212, 232, 0.45);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.03);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  transform: translateY(-2px);
 }
 
-/* Wave Bottom Border */
-.border-greca {
+/* Water Wave Bottom Border */
+.border-wave {
   position: relative;
   padding-bottom: 28px !important;
 }
 
-.border-greca::after {
+.border-wave::after {
   content: "";
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg width='40' height='14' viewBox='0 0 40 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,7 C5,0 10,14 20,7 C30,0 35,14 40,7' fill='none' stroke='%2300D4E8' stroke-width='1.5' stroke-opacity='0.4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='40' height='14' viewBox='0 0 40 14' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,7 C5,0 10,14 20,7 C30,0 35,14 40,7' fill='none' stroke='%2300f0ff' stroke-width='1.5' stroke-opacity='0.3'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-size: 40px 14px;
 }

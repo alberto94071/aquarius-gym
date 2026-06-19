@@ -5,11 +5,7 @@ export function Topbar({ user, onOpenMobileMenu }: { user: any, onOpenMobileMenu
   return (
     <header className="h-16 bg-black/40 backdrop-blur-md border-b border-white/10 fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 sm:px-6 overflow-hidden">
       
-      {/* Frieze ornament background */}
-      <div 
-        className="absolute inset-0 pointer-events-none opacity-30 z-0"
-        style={{ backgroundImage: "url('/frieze.jpg')", backgroundRepeat: "repeat-x", backgroundSize: "auto 100%" }}
-      />
+
       
       {/* Left side: Hamburger (Mobile) & Logo */}
       <div className="flex items-center gap-3 md:hidden z-10">

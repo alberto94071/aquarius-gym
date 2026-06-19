@@ -92,7 +92,7 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
       </div>
       
       {/* Perfil Header */}
-      <div className="card-olimpo p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6 border-greca">
+      <div className="card-olimpo p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6 border-wave">
         <MemberPhotoEdit memberId={id} initialPhotoUrl={member.photoUrl} />
         <div className="flex-1 text-center md:text-left">
           <div className="flex flex-col md:flex-row items-center gap-3">

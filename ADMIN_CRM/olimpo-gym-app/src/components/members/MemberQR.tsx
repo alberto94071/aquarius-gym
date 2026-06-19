@@ -14,8 +14,8 @@ export function MemberQR({ code, name }: { code: string; name: string }) {
       <html><head><title>Carné QR - ${name}</title>
       <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #fff; }
-        .card { border: 2px solid #C5A55A; border-radius: 16px; padding: 32px; text-align: center; max-width: 300px; }
-        h1 { color: #C5A55A; font-size: 22px; margin: 0 0 4px; }
+        .card { border: 2px solid #00D4E8; border-radius: 16px; padding: 32px; text-align: center; max-width: 300px; }
+        h1 { color: #00D4E8; font-size: 22px; margin: 0 0 4px; }
         p { color: #444; font-size: 13px; margin: 0 0 20px; }
         .code { font-family: monospace; font-size: 14px; color: #666; margin-top: 16px; }
         .gym { font-size: 11px; color: #999; margin-top: 8px; }

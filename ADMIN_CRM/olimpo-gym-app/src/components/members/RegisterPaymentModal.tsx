@@ -126,21 +126,21 @@ export function RegisterPaymentModal({
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:Arial,sans-serif;color:#111;background:#fff;padding:24px}
-  .header{text-align:center;border-bottom:3px solid #C5A55A;padding-bottom:16px;margin-bottom:20px}
-  .logo-title{font-size:28px;font-weight:900;color:#C5A55A;letter-spacing:4px}
+  .header{text-align:center;border-bottom:3px solid #00D4E8;padding-bottom:16px;margin-bottom:20px}
+  .logo-title{font-size:28px;font-weight:900;color:#00D4E8;letter-spacing:4px}
   .subtitle{font-size:12px;color:#666;margin-top:2px}
   .receipt-num{font-size:11px;color:#999;margin-top:8px}
-  h2{font-size:14px;color:#C5A55A;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}
+  h2{font-size:14px;color:#00D4E8;text-transform:uppercase;letter-spacing:1px;margin:16px 0 8px;border-bottom:1px solid #eee;padding-bottom:4px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin-bottom:8px}
   .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0}
   .label{color:#666;font-size:12px}
   .value{font-weight:600;font-size:12px;text-align:right}
-  .total-box{background:#C5A55A;color:#000;padding:12px 20px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin:16px 0}
+  .total-box{background:#00D4E8;color:#000;padding:12px 20px;border-radius:8px;display:flex;justify-content:space-between;align-items:center;margin:16px 0}
   .total-label{font-size:13px;font-weight:700}
   .total-value{font-size:22px;font-weight:900}
   .period-badge{display:inline-block;background:#edf7ed;color:#2e7d32;border:1px solid #a5d6a7;border-radius:20px;padding:4px 14px;font-size:13px;font-weight:700;margin:8px 0}
   .footer{margin-top:24px;text-align:center;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px}
-  .stamp{display:inline-block;border:2px solid #C5A55A;color:#C5A55A;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:2px;transform:rotate(-5deg);margin-top:12px}
+  .stamp{display:inline-block;border:2px solid #00D4E8;color:#00D4E8;padding:4px 16px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:2px;transform:rotate(-5deg);margin-top:12px}
   @media print{body{padding:8px}}
 </style>
 </head>

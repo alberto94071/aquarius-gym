@@ -31,7 +31,7 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
                 width={BAR_W}
                 height={barH}
                 rx={4}
-                fill={isLast ? "#C5A55A" : "#C5A55A44"}
+                fill={isLast ? "#00D4E8" : "#00D4E844"}
               />
               {/* value label */}
               <text
@@ -39,7 +39,7 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
                 y={y - 4}
                 textAnchor="middle"
                 fontSize={9}
-                fill="#C5A55A"
+                fill="#00D4E8"
                 fontWeight="600"
               >
                 {d.value > 0 ? `Q${Math.round(d.value)}` : ""}
@@ -50,7 +50,7 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
                 y={H + 18}
                 textAnchor="middle"
                 fontSize={10}
-                fill={isLast ? "#C5A55A" : "#888"}
+                fill={isLast ? "#00D4E8" : "#888"}
                 fontWeight={isLast ? "700" : "400"}
               >
                 {d.label}

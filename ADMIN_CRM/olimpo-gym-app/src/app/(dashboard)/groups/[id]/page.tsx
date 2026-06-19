@@ -24,7 +24,7 @@ export default async function GroupDetailsPage({ params }: { params: Promise<{ i
       </div>
       
       {/* Perfil Header */}
-      <div className="card-olimpo p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6 border-greca">
+      <div className="card-olimpo p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center gap-6 border-wave">
         <div className="w-24 h-24 rounded-full bg-olimpo-surface-light border-2 border-olimpo-gold flex items-center justify-center shadow-[0_0_20px_rgba(197,165,90,0.3)]">
           <Users className="w-12 h-12 text-olimpo-gold" />
         </div>
