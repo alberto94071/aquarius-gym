@@ -18,11 +18,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Aquarius Gym | CRM",
     description: "Sistema de administración oficial. Control de acceso, pagos y miembros.",
-    url: "https://crm-olimpo-gym.vercel.app",
+    url: "https://aquarius-gym.vercel.app",
     siteName: "Aquarius Gym",
     images: [
       {
-        url: "https://crm-olimpo-gym.vercel.app/logo.jpeg",
+        url: "https://aquarius-gym.vercel.app/AQUARIUS-LOGO.jpeg",
         width: 800,
         height: 800,
         alt: "Logotipo Oficial de Aquarius Gym",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Aquarius Gym | CRM",
     description: "Sistema de administración oficial para Aquarius Gym.",
-    images: ["https://crm-olimpo-gym.vercel.app/logo.jpeg"],
+    images: ["https://aquarius-gym.vercel.app/AQUARIUS-LOGO.jpeg"],
   },
 };
 

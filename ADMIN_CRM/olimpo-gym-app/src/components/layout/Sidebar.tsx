@@ -73,7 +73,7 @@ export function Sidebar({
       >
         <div className={`flex items-center gap-3 ${desktopCollapsed && !mobileOpen ? 'justify-center w-full' : ''}`}>
           <div className={`shrink-0 rounded-full border-2 border-olimpo-gold/50 flex items-center justify-center shadow-[0_0_20px_rgba(197,165,90,0.25)] overflow-hidden bg-black transition-all duration-300 ${desktopCollapsed && !mobileOpen ? 'w-12 h-12' : 'w-20 h-20'}`}>
-            <img src="/logo.jpeg" alt="Logo" className="w-full h-full object-cover" />
+            <img src="/AQUARIUS-LOGO.jpeg" alt="Logo" className="w-full h-full object-cover" />
           </div>
           {(!desktopCollapsed || mobileOpen) && (
             <div className="flex flex-col justify-center">
