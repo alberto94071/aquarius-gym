@@ -15,7 +15,7 @@ export function PhotoUploader({ currentPhotoUrl, onPhotoUploaded, isUploadingSta
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const UPLOAD_PRESET = "olimpo_members"; // Make sure this exists in Cloudinary
+  const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "olimpo_members";
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
