@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { homeContent, members } from "@/db/schema";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, isNull } from "drizzle-orm";
 import { getMobileAuth } from "@/lib/mobile-auth";
 
 export async function GET(req: NextRequest) {
@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           eq(homeContent.published, true),
-          or(eq(homeContent.gymId, member.gymId), eq(homeContent.gymId, null as unknown as string))
+          or(
+            member.gymId ? eq(homeContent.gymId, member.gymId) : undefined,
+            isNull(homeContent.gymId)
+          )
         )
       )
       .orderBy(desc(homeContent.pinned), homeContent.sortOrder, homeContent.createdAt);

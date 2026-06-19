@@ -53,18 +53,17 @@ export async function createAnnouncement(data: { title: string; body: string; im
   if (data.sendPush) {
     const { sendExpoPush } = await import("@/lib/expo-push");
 
-    const subs = await db
+    const subsQuery = db
       .select({ token: pushSubscriptions.expoPushToken })
       .from(pushSubscriptions)
-      .innerJoin(members, eq(pushSubscriptions.memberId, members.id))
-      .where(
-        and(
-          eq(pushSubscriptions.active, true),
-          finalGymId ? eq(members.gymId, finalGymId) : undefined
-        )
-      );
+      .innerJoin(members, eq(pushSubscriptions.memberId, members.id));
+
+    const subs = finalGymId
+      ? await subsQuery.where(and(eq(pushSubscriptions.active, true), eq(members.gymId, finalGymId)))
+      : await subsQuery.where(eq(pushSubscriptions.active, true));
 
     const tokens = subs.map((s) => s.token).filter(Boolean);
+    console.log(`[announcements] Push: ${tokens.length} token(s) encontrados, gymId=${finalGymId ?? "todos"}`);
 
     if (tokens.length > 0) {
       await sendExpoPush(tokens, data.title, data.body, { type: "announcement" });
