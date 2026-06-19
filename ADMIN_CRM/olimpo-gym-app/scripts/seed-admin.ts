@@ -16,7 +16,7 @@ async function seed() {
     const hashedPassword = await bcrypt.hash('admin123', salt);
 
     const admins = [
-      { email: 'admin@olimpo.com', name: 'Administrador Olimpo' },
+      { email: 'admin@aquariusgym.com', name: 'Administrador Aquarius' },
       { email: 'alberto.94071@gmail.com', name: 'Alberto Admin' }
     ];
 
