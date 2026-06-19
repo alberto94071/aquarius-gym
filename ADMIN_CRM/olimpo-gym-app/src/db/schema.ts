@@ -106,6 +106,10 @@ export const members = pgTable("members", {
   photoUrl: varchar("photo_url", { length: 1024 }),
   password: varchar("password", { length: 255 }),
   notes: text("notes"),
+  address: varchar("address", { length: 500 }),
+  emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
+  emergencyContactPhone: varchar("emergency_contact_phone", { length: 50 }),
+  emergencyContactRelation: varchar("emergency_contact_relation", { length: 100 }),
   registeredBy: uuid("registered_by").references(() => systemUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -270,6 +274,20 @@ export const workoutSetLogs = pgTable("workout_set_logs", {
   weight: varchar("weight", { length: 50 }),
   reps: varchar("reps", { length: 50 }),
   completed: boolean("completed").default(false).notNull(),
+});
+
+// Body measurements logged by member
+export const bodyMeasurements = pgTable("body_measurements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  memberId: uuid("member_id").references(() => members.id).notNull(),
+  logDate: date("log_date").notNull(),
+  weightKg: decimal("weight_kg", { precision: 5, scale: 2 }),
+  waistCm: decimal("waist_cm", { precision: 5, scale: 2 }),
+  chestCm: decimal("chest_cm", { precision: 5, scale: 2 }),
+  hipsCm: decimal("hips_cm", { precision: 5, scale: 2 }),
+  armCm: decimal("arm_cm", { precision: 5, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Home screen content (videos, articles, tips, images)

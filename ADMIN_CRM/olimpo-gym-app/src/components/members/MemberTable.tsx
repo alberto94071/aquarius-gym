@@ -102,12 +102,12 @@ export function MemberTable({ members }: { members: any[] }) {
                   m.status === "mora" ? "bg-olimpo-red/20 text-olimpo-red" :
                   "bg-olimpo-surface-light text-olimpo-text-muted"
                 }`}>
-                  {m.status}
+                  {m.status === "activo" ? "Al día" : m.status === "mora" ? "En mora" : m.status}
                 </span>
               </div>
               <div className="flex justify-between text-sm text-olimpo-text-muted">
                 <span>Plan: {m.plan}</span>
-                <span>Vence: {new Date(m.membershipEnd).toLocaleDateString()}</span>
+                <span>Vence: {new Date(m.membershipEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
               </div>
               <div className="flex justify-between items-center mt-2 pt-2 border-t border-olimpo-surface-light">
                 <span className="font-bold text-olimpo-text">Q {m.price}</span>
@@ -155,7 +155,7 @@ export function MemberTable({ members }: { members: any[] }) {
                     {m.plan}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-olimpo-text-muted">
-                    {new Date(m.membershipEnd).toLocaleDateString()}
+                    {new Date(m.membershipEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" })}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full uppercase tracking-wider ${
@@ -163,7 +163,7 @@ export function MemberTable({ members }: { members: any[] }) {
                       m.status === "mora" ? "bg-olimpo-red/10 text-olimpo-red" :
                       "bg-olimpo-surface-light text-olimpo-text-muted"
                     }`}>
-                      {m.status}
+                      {m.status === "activo" ? "Al día" : m.status === "mora" ? "En mora" : m.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

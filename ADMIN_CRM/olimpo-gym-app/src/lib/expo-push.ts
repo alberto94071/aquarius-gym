@@ -6,7 +6,8 @@ interface ExpoPushMessage {
   title: string;
   body: string;
   data: Record<string, unknown>;
-  imageUrl?: string;
+  channelId: string;
+  image?: string;
 }
 
 export async function sendExpoPush(
@@ -18,13 +19,16 @@ export async function sendExpoPush(
 ): Promise<void> {
   if (tokens.length === 0) return;
 
+  console.log(`[expo-push] Enviando a ${tokens.length} token(s)`);
+
   const messages: ExpoPushMessage[] = tokens.map((token) => ({
     to: token,
     sound: "default",
     title,
     body,
     data: data || {},
-    ...(imageUrl ? { imageUrl } : {}),
+    channelId: "default",
+    ...(imageUrl ? { image: imageUrl } : {}),
   }));
 
   // Expo acepta máximo 100 mensajes por request
@@ -40,7 +44,22 @@ export async function sendExpoPush(
     });
 
     if (!res.ok) {
-      console.error("[expo-push] Error al enviar chunk:", await res.text());
+      console.error("[expo-push] HTTP error:", res.status, await res.text());
+      continue;
+    }
+
+    // Parse ticket response to detect per-token errors
+    try {
+      const result = await res.json() as { data: Array<{ status: string; id?: string; message?: string; details?: unknown }> };
+      for (const ticket of result.data ?? []) {
+        if (ticket.status === "error") {
+          console.error("[expo-push] Ticket error:", ticket.message, ticket.details);
+        } else {
+          console.log("[expo-push] Ticket ok:", ticket.id);
+        }
+      }
+    } catch {
+      console.error("[expo-push] No se pudo parsear respuesta de Expo");
     }
   }
 }

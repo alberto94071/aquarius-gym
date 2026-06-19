@@ -1,41 +1,25 @@
 "use server";
 
 import { db } from "@/db";
-import { members, payments, groups, gyms, systemUsers } from "@/db/schema";
+import { members, payments, groups, gyms } from "@/db/schema";
 import { eq, and, sql, gte, lt } from "drizzle-orm";
 
 export async function getDashboardData(gymIdFilter?: string) {
   const today = new Date();
   
-  // Calculate the grace period cutoff date
-  // Anyone whose membershipEnd + 7 days is BEFORE today is in mora.
-  // This means: today > membershipEnd + 7 days
-  // So: membershipEnd < today - 7 days
-  const cutoffDate = new Date();
-  cutoffDate.setDate(today.getDate() - 7);
-  const cutoffStr = cutoffDate.toISOString().split("T")[0];
-
   const conditions = [];
   if (gymIdFilter) {
     conditions.push(eq(members.gymId, gymIdFilter));
   }
 
-  // Active Members = Not in Mora
-  // Mora = membershipEnd < cutoffStr
+  // Use status column as source of truth (same as members list filter)
   const activeMembersQuery = db.select({ count: sql`count(*)` })
     .from(members)
-    .where(and(
-      ...conditions,
-      sql`${members.membershipEnd} >= ${cutoffStr}`
-    ));
+    .where(and(...conditions, eq(members.status, "activo")));
 
-  // Mora Members Count
   const moraMembersQuery = db.select({ count: sql`count(*)` })
     .from(members)
-    .where(and(
-      ...conditions,
-      sql`${members.membershipEnd} < ${cutoffStr}`
-    ));
+    .where(and(...conditions, eq(members.status, "mora")));
 
   const [activeRes] = await activeMembersQuery;
   const [moraRes] = await moraMembersQuery;
@@ -74,7 +58,7 @@ export async function getDashboardData(gymIdFilter?: string) {
     .where(and(
       ...conditions,
       eq(members.isRepresentative, true),
-      sql`${members.membershipEnd} < ${cutoffStr}`
+      eq(members.status, "mora")
     ));
 
   const groupsInMoraRaw = await groupsInMoraQuery;

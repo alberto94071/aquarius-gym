@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { members, gyms } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, ilike } from "drizzle-orm";
 import { signMobileJWT } from "@/lib/mobile-auth";
 import bcrypt from "bcryptjs";
 
@@ -13,6 +13,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Correo y contraseña requeridos" }, { status: 400 });
     }
 
+    const identifier = email.trim().toLowerCase();
+
+    // Allow login by email OR member code (case-insensitive)
     const [row] = await db
       .select({
         id: members.id,
@@ -27,7 +30,10 @@ export async function POST(req: NextRequest) {
       })
       .from(members)
       .leftJoin(gyms, eq(members.gymId, gyms.id))
-      .where(eq(members.email, email))
+      .where(or(
+        eq(members.email, identifier),
+        ilike(members.code, identifier)
+      ))
       .limit(1);
 
     if (!row || !row.password) {

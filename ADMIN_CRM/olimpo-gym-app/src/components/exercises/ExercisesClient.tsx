@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createExercise, deleteExercise } from "@/actions/exercises";
-import { Plus, Trash2, X, Dumbbell, Play } from "lucide-react";
+import { createExercise, updateExercise, deleteExercise } from "@/actions/exercises";
+import { Plus, Trash2, X, Dumbbell, Play, Pencil } from "lucide-react";
 
 type MuscleGroup = "pecho" | "espalda" | "hombros" | "biceps" | "triceps" | "piernas" | "gluteos" | "core" | "cardio" | "full_body";
 
@@ -58,25 +58,33 @@ export function ExercisesClient({
   const [filter, setFilter] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [form, setForm] = useState({
-    name: "",
-    muscleGroup: "pecho" as MuscleGroup,
-    defaultSets: "3 x 10-12",
-    defaultRest: "2 min",
-    notes: "",
-    imageUrl: "",
-    videoUrl: "",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const BLANK = { name: "", muscleGroup: "pecho" as MuscleGroup, defaultSets: "3 x 10-12", defaultRest: "2 min", notes: "", imageUrl: "", videoUrl: "" };
+  const [form, setForm] = useState(BLANK);
   const [error, setError] = useState("");
 
   const filtered = filter === "all" ? exercises : exercises.filter((e) => e.muscleGroup === filter);
+
+  function openEdit(ex: Exercise) {
+    setEditingId(ex.id);
+    setForm({ name: ex.name, muscleGroup: ex.muscleGroup, defaultSets: ex.defaultSets ?? "3 x 10-12", defaultRest: ex.defaultRest ?? "2 min", notes: ex.notes ?? "", imageUrl: ex.imageUrl ?? "", videoUrl: ex.videoUrl ?? "" });
+    setError("");
+    setShowForm(true);
+  }
+
+  function openNew() {
+    setEditingId(null);
+    setForm(BLANK);
+    setError("");
+    setShowForm(true);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     startTransition(async () => {
       try {
-        await createExercise({
+        const payload = {
           name: form.name,
           muscleGroup: form.muscleGroup,
           defaultSets: form.defaultSets,
@@ -84,11 +92,16 @@ export function ExercisesClient({
           notes: form.notes || undefined,
           imageUrl: form.imageUrl || undefined,
           videoUrl: form.videoUrl || undefined,
-        });
-        setForm({ name: "", muscleGroup: "pecho", defaultSets: "3 x 10-12", defaultRest: "2 min", notes: "", imageUrl: "", videoUrl: "" });
+        };
+        if (editingId) {
+          await updateExercise(editingId, payload);
+        } else {
+          await createExercise(payload);
+        }
         setShowForm(false);
+        setEditingId(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error al crear ejercicio");
+        setError(err instanceof Error ? err.message : "Error al guardar ejercicio");
       }
     });
   }
@@ -128,7 +141,7 @@ export function ExercisesClient({
           })}
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openNew}
           className="flex items-center gap-2 bg-olimpo-gold text-black px-4 py-2 rounded-lg font-bold text-sm hover:bg-olimpo-gold-light transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" /> Nuevo Ejercicio
@@ -179,6 +192,14 @@ export function ExercisesClient({
                       </span>
                     )}
                     <button
+                      onClick={() => openEdit(ex)}
+                      disabled={pending}
+                      className="text-olimpo-text-muted hover:text-olimpo-gold transition-colors"
+                      title="Editar"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => handleDelete(ex.id)}
                       disabled={pending}
                       className="text-olimpo-text-muted hover:text-olimpo-red transition-colors"
@@ -202,12 +223,12 @@ export function ExercisesClient({
         </div>
       )}
 
-      {/* Create modal */}
+      {/* Create/Edit modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="bg-olimpo-surface border border-olimpo-surface-light rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b border-olimpo-surface-light sticky top-0 bg-olimpo-surface z-10">
-              <h2 className="font-bold text-olimpo-gold text-lg">Nuevo Ejercicio</h2>
+              <h2 className="font-bold text-olimpo-gold text-lg">{editingId ? "Editar Ejercicio" : "Nuevo Ejercicio"}</h2>
               <button onClick={() => setShowForm(false)} className="text-olimpo-text-muted hover:text-olimpo-text">
                 <X className="w-5 h-5" />
               </button>
@@ -306,7 +327,7 @@ export function ExercisesClient({
                 disabled={pending}
                 className="w-full bg-olimpo-gold text-black font-bold py-3 rounded-lg hover:bg-olimpo-gold-light transition-colors disabled:opacity-50 text-sm"
               >
-                {pending ? "Guardando..." : "Crear Ejercicio"}
+                {pending ? "Guardando..." : editingId ? "Guardar cambios" : "Crear Ejercicio"}
               </button>
             </form>
           </div>

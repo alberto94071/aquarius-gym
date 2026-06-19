@@ -33,19 +33,29 @@ function getPaidMonths(paymentHistory: { periodStart: string | null; periodEnd: 
   }
   return paid;
 }
-import { ArrowLeft, Calendar, CreditCard, Clock, ShieldCheck, Dumbbell, Mail, ListChecks, BarChart2 } from "lucide-react";
+import { ArrowLeft, Calendar, CreditCard, Clock, ShieldCheck, Dumbbell, Mail, ListChecks, BarChart2, MapPin, Phone, UserCheck } from "lucide-react";
 import { MemberPhotoEdit } from "@/components/members/MemberPhotoEdit";
 import { ResetPasswordButton } from "@/components/members/ResetPasswordButton";
 import { MemberQR } from "@/components/members/MemberQR";
 import { RegisterPaymentModal } from "@/components/members/RegisterPaymentModal";
 import { AssignRoutineModal } from "@/components/members/AssignRoutineModal";
+import { EditMemberModal } from "@/components/members/EditMemberModal";
+import { DeleteMemberButton } from "@/components/members/DeleteMemberButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getMemberActiveRoutine } from "@/actions/routines";
 import { getRoutines } from "@/actions/routines";
+import { auth } from "@/auth";
+import { db } from "@/db";
+import { systemUsers } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export default async function MemberDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const session = await auth();
+  const [currentUserRow] = await db.select().from(systemUsers).where(eq(systemUsers.email, session!.user!.email!));
+  const userRole = currentUserRow?.role ?? "coach";
+
   const [member, activeRoutine, allRoutines] = await Promise.all([
     getMemberById(id),
     getMemberActiveRoutine(id),
@@ -59,17 +69,26 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link href="/members" className="inline-flex items-center gap-2 text-olimpo-text-muted hover:text-olimpo-gold transition-colors font-medium">
           <ArrowLeft className="w-4 h-4" /> Volver a Miembros
         </Link>
-        <RegisterPaymentModal
-          memberId={id}
-          memberName={member.name}
-          memberCode={member.code}
-          defaultAmount={member.price}
-          membershipEnd={member.membershipEnd}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <EditMemberModal member={member} userRole={userRole} />
+          {userRole === "admin" && (
+            <DeleteMemberButton memberId={id} memberName={member.name} />
+          )}
+          <RegisterPaymentModal
+            memberId={id}
+            memberName={member.name}
+            memberCode={member.code}
+            defaultAmount={member.price}
+            membershipEnd={member.membershipEnd}
+            paidMonths={getPaidMonths(member.payments)}
+            gymName={member.gymName}
+            enrollmentFee={member.enrollmentFee ?? undefined}
+          />
+        </div>
       </div>
       
       {/* Perfil Header */}
@@ -128,12 +147,12 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-olimpo-text-muted">Inscripción:</span>
-              <span className="font-medium">{new Date(member.membershipStart).toLocaleDateString()}</span>
+              <span className="font-medium">{new Date(member.membershipStart + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-olimpo-text-muted">Vencimiento:</span>
               <span className={`font-medium ${isMora ? "text-olimpo-red font-bold" : "text-olimpo-green"}`}>
-                {new Date(member.membershipEnd).toLocaleDateString()}
+                {new Date(member.membershipEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" })}
               </span>
             </div>
           </div>
@@ -146,7 +165,7 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
           </div>
           <div className="flex flex-col items-center justify-center py-2">
             {member.lastVisit ? (
-              <span className="text-xl font-bold">{new Date(member.lastVisit).toLocaleDateString()}</span>
+              <span className="text-xl font-bold">{new Date(member.lastVisit + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>
             ) : (
               <span className="text-olimpo-text-muted">Sin visitas registradas</span>
             )}
@@ -155,6 +174,40 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
 
         <MemberQR code={member.code} name={member.name} />
       </div>
+
+      {/* Address & Emergency Contact */}
+      {(member.address || member.emergencyContactName) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {member.address && (
+            <div className="card-olimpo p-6 rounded-2xl">
+              <div className="flex items-center gap-3 mb-3">
+                <MapPin className="w-5 h-5 text-olimpo-gold" />
+                <h3 className="font-medium text-olimpo-text">Dirección</h3>
+              </div>
+              <p className="text-olimpo-text-muted text-sm">{member.address}</p>
+            </div>
+          )}
+          {member.emergencyContactName && (
+            <div className="card-olimpo p-6 rounded-2xl">
+              <div className="flex items-center gap-3 mb-3">
+                <UserCheck className="w-5 h-5 text-olimpo-gold" />
+                <h3 className="font-medium text-olimpo-text">Contacto de Emergencia</h3>
+              </div>
+              <div className="space-y-2">
+                <p className="font-semibold text-olimpo-text">{member.emergencyContactName}</p>
+                {member.emergencyContactRelation && (
+                  <p className="text-xs text-olimpo-text-muted uppercase tracking-wide">{member.emergencyContactRelation}</p>
+                )}
+                {member.emergencyContactPhone && (
+                  <p className="flex items-center gap-2 text-sm text-olimpo-gold font-medium">
+                    <Phone className="w-4 h-4" /> {member.emergencyContactPhone}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Paid months summary */}
       {member.payments.length > 0 && (() => {

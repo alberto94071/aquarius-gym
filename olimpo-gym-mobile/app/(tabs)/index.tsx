@@ -145,6 +145,52 @@ function ContentCard({ item }: { item: HomeContentItem }) {
   );
 }
 
+// ─── Notice Card ──────────────────────────────────────────────────────────────
+
+function BellIcon({ color = Colors.gold, size = 20 }: { color?: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </Svg>
+  );
+}
+
+function NoticeCard({ item }: { item: HomeContentItem }) {
+  return (
+    <View style={noticeStyles.card}>
+      {item.imageUrl && (
+        <Image source={{ uri: item.imageUrl }} style={noticeStyles.image} resizeMode="cover" />
+      )}
+      <View style={noticeStyles.body}>
+        <View style={noticeStyles.badge}>
+          <BellIcon size={10} color={Colors.gold} />
+          <Text style={noticeStyles.badgeText}>AVISO</Text>
+        </View>
+        <Text style={noticeStyles.title}>{item.title}</Text>
+        {item.body && <Text style={noticeStyles.bodyText}>{item.body}</Text>}
+      </View>
+    </View>
+  );
+}
+
+const noticeStyles = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.gold + "10",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.gold + "40",
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  image: { width: "100%", height: 160 },
+  body: { padding: 14 },
+  badge: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
+  badgeText: { color: Colors.gold, fontSize: 9, fontWeight: "700", letterSpacing: 1.5 },
+  title: { color: Colors.text, fontSize: 14, fontWeight: "700", lineHeight: 20 },
+  bodyText: { color: Colors.dim, fontSize: 12, marginTop: 4, lineHeight: 18 },
+});
+
 // ─── Quick Action Card ─────────────────────────────────────────────────────────
 
 function QuickActionCard({
@@ -212,6 +258,7 @@ export default function HomeScreen() {
 
   const onRefresh = () => { setRefreshing(true); load(); };
 
+  const notices = content.filter((c) => c.type === "notice");
   const videos = content.filter((c) => c.type === "video");
   const articles = content.filter((c) => c.type === "article");
   const tips = content.filter((c) => c.type === "tip" || c.type === "image");
@@ -275,6 +322,19 @@ export default function HomeScreen() {
           <Text style={styles.quoteAuthor}>— {quote.author}</Text>
         </View>
       </View>
+
+      {/* ─── Notices ─── */}
+      {notices.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionLabel}>AVISOS DEL GYM</Text>
+            <BellIcon size={14} />
+          </View>
+          {notices.map((n) => (
+            <NoticeCard key={n.id} item={n} />
+          ))}
+        </View>
+      )}
 
       {/* ─── Videos ─── */}
       {videos.length > 0 && (

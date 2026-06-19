@@ -153,13 +153,13 @@ export default function LoginScreen() {
           ) : (
             <>
               <Text style={styles.instructionText}>
-                Usa el correo y contraseña que te proporcionó el gimnasio.
+                Ingresa tu código de carné o correo, y la contraseña que te dio el gimnasio.
               </Text>
               <TextInput
                 style={styles.input}
-                placeholder="Correo electrónico"
+                placeholder="Código de carné o correo"
                 placeholderTextColor={Colors.dim}
-                keyboardType="email-address"
+                keyboardType="default"
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={email}

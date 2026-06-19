@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Search, Loader2, CreditCard, Calendar, User, ShieldCheck, Users, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
-import { searchMembersForPayment, registerPayment, getGroupDetailsForPayment, getMemberPaymentInfo } from "@/actions/payments";
+import { searchMembersForPayment, getMoraMembers, registerPayment, getGroupDetailsForPayment, getMemberPaymentInfo } from "@/actions/payments";
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -56,19 +56,21 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Debounce search
+  // Load mora members by default; search when query is typed
   useEffect(() => {
     const timer = setTimeout(async () => {
       setLoadingSearch(true);
       try {
-        const res = await searchMembersForPayment(query, gymFilter || undefined);
+        const res = query.trim()
+          ? await searchMembersForPayment(query, gymFilter || undefined)
+          : await getMoraMembers(gymFilter || undefined);
         setResults(res);
       } catch (e) {
         console.error(e);
       } finally {
         setLoadingSearch(false);
       }
-    }, 500);
+    }, query.trim() ? 500 : 0);
     return () => clearTimeout(timer);
   }, [query, gymFilter]);
 
@@ -153,7 +155,10 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
       setSelectedMember(null);
       setSelectedGroup(null);
       setMemberPaymentInfo(null);
-      const res = await searchMembersForPayment(query, gymFilter || undefined);
+      // Refresh list — morosos if no query, search otherwise
+      const res = query.trim()
+        ? await searchMembersForPayment(query, gymFilter || undefined)
+        : await getMoraMembers(gymFilter || undefined);
       setResults(res);
     } catch (err) {
       console.error(err);
@@ -163,10 +168,11 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
     }
   };
 
+  // mora si hoy > día 8 del mes siguiente al vencimiento
   const isMora = (endDateStr: string) => {
-    const grace = new Date(endDateStr);
-    grace.setDate(grace.getDate() + 7);
-    return new Date() > grace;
+    const end = new Date(endDateStr + "T00:00:00");
+    const graceDeadline = new Date(end.getFullYear(), end.getMonth() + 1, 8);
+    return new Date() > graceDeadline;
   };
 
   return (
@@ -200,11 +206,16 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
 
         <div className="bg-olimpo-surface rounded-2xl border border-olimpo-surface-light shadow-lg overflow-hidden flex flex-col h-[500px]">
           <div className="p-4 border-b border-olimpo-surface-light bg-olimpo-surface-light/20">
-            <h3 className="font-medium text-olimpo-gold">Resultados ({results.length})</h3>
+            <h3 className="font-medium text-olimpo-gold">
+              {query.trim() ? `Resultados (${results.length})` : `En mora (${results.length})`}
+            </h3>
+            {!query.trim() && results.length > 0 && (
+              <p className="text-xs text-olimpo-text-muted mt-0.5">Busca por nombre o código para ver otros miembros</p>
+            )}
           </div>
           <div className="flex-1 overflow-y-auto p-2">
             {results.length === 0 ? (
-              <p className="text-center text-olimpo-text-muted mt-10">Busca a alguien para registrar su pago.</p>
+              <p className="text-center text-olimpo-text-muted mt-10">{query.trim() ? "Sin resultados." : "No hay miembros en mora. ✓"}</p>
             ) : (
               <div className="space-y-2">
                 {results.map((m) => {
