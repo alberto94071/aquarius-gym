@@ -30,7 +30,7 @@ export default function LoginPage({ searchParams }: { searchParams?: { error?: s
   return (
     <div 
       className="min-h-screen flex items-center justify-center bg-olimpo-bg relative overflow-hidden bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/login-bg.jpg')" }}
+      style={{ backgroundImage: "url('/login-bg.png')" }}
     >
       <div className="absolute inset-0 bg-black/60 z-0"></div>
 
@@ -41,7 +41,7 @@ export default function LoginPage({ searchParams }: { searchParams?: { error?: s
       <div className="w-full max-w-md p-8 bg-black/40 backdrop-blur-md border border-white/10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] z-10">
         <div className="flex flex-col items-center mb-6">
           <div className="w-24 h-24 rounded-full border-2 border-olimpo-gold/50 flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(197,165,90,0.3)] overflow-hidden bg-black">
-            <img src="/logo.jpeg" alt="Aquarius Gym Logo" className="w-full h-full object-cover" />
+            <img src="/AQUARIUS-LOGO.jpeg" alt="Aquarius Gym Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-serif font-bold text-olimpo-gold tracking-widest text-center mt-2">
             AQUARIUS GYM
