@@ -122,7 +122,7 @@ export function RegisterPaymentModal({
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<title>Recibo de Pago — Olimpo Gym</title>
+<title>Recibo de Pago — Aquarius Gym</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:Arial,sans-serif;color:#111;background:#fff;padding:24px}
@@ -146,7 +146,7 @@ export function RegisterPaymentModal({
 </head>
 <body>
 <div class="header">
-  <div class="logo-title">OLIMPO GYM</div>
+  <div class="logo-title">AQUARIUS GYM</div>
   <div class="subtitle">${gymName}</div>
   <div class="receipt-num">Recibo generado el ${today.toLocaleDateString("es-GT", {weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
 </div>
@@ -174,7 +174,7 @@ ${notes ? `<div class="row"><span class="label">Notas</span><span class="value">
 </div>
 
 <div class="footer">
-  <p>Este recibo es un comprobante de pago de membresía en Olimpo Gym.</p>
+  <p>Este recibo es un comprobante de pago de membresía en Aquarius Gym.</p>
   <p>Guárdalo como referencia. Para dudas llama a recepción.</p>
 </div>
 </body>

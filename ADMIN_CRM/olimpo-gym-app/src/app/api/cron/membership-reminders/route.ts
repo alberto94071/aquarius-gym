@@ -120,14 +120,14 @@ export async function GET(req: NextRequest) {
     await notifyGroup(
       expiring7,
       "⚠️ Tu membresía vence en 7 días",
-      "Hola {nombre}, tu membresía de Olimpo Gym vence en 7 días. ¡Renueva a tiempo para no perder tu cupo!",
+      "Hola {nombre}, tu membresía de Aquarius Gym vence en 7 días. ¡Renueva a tiempo para no perder tu cupo!",
       "payment_reminder"
     );
 
     await notifyGroup(
       expiring1,
       "🚨 Tu membresía vence mañana",
-      "Hola {nombre}, tu membresía de Olimpo Gym vence mañana. Renueva hoy para seguir entrenando sin interrupciones.",
+      "Hola {nombre}, tu membresía de Aquarius Gym vence mañana. Renueva hoy para seguir entrenando sin interrupciones.",
       "payment_reminder"
     );
 

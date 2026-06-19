@@ -123,7 +123,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </div>
                     <div className="flex gap-2">
                       <a 
-                        href={`https://wa.me/502${(g.repPhone || '').replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(g.repName)},%20te%20escribimos%20de%20Olimpo%20Gym.%20Notamos%20que%20la%20mensualidad%20de%20tu%20grupo%20está%20pendiente.%20Por%20favor%20ponte%20al%20día%20para%20evitar%20bloqueos.`}
+                        href={`https://wa.me/502${(g.repPhone || '').replace(/\D/g, '')}?text=Hola%20${encodeURIComponent(g.repName)},%20te%20escribimos%20de%20Aquarius%20Gym.%20Notamos%20que%20la%20mensualidad%20de%20tu%20grupo%20está%20pendiente.%20Por%20favor%20ponte%20al%20día%20para%20evitar%20bloqueos.`}
                         target="_blank"
                         rel="noreferrer"
                         className="px-3 py-1.5 bg-olimpo-surface-light text-xs font-medium rounded-lg hover:text-olimpo-gold transition-colors border border-transparent hover:border-olimpo-gold/30 flex items-center gap-1"
@@ -163,7 +163,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                       </div>
                     </div>
                     <a 
-                      href={`https://wa.me/502${bday.phone.replace(/\D/g, '')}?text=¡Feliz%20cumpleaños%20${encodeURIComponent(bday.name.split(' ')[0])}!%20🎉%20De%20parte%20de%20toda%20la%20familia%20Olimpo%20Gym%20te%20deseamos%20un%20día%20lleno%20de%20bendiciones%20y%20muchos%20gains.%20💪`}
+                      href={`https://wa.me/502${bday.phone.replace(/\D/g, '')}?text=¡Feliz%20cumpleaños%20${encodeURIComponent(bday.name.split(' ')[0])}!%20🎉%20De%20parte%20de%20toda%20la%20familia%20Aquarius%20Gym%20te%20deseamos%20un%20día%20lleno%20de%20bendiciones%20y%20muchos%20gains.%20💪`}
                       target="_blank"
                       rel="noreferrer"
                       className="px-3 py-1.5 bg-olimpo-surface-light text-xs font-medium rounded-lg hover:text-olimpo-purple transition-colors border border-transparent hover:border-olimpo-purple/30"
