@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { members, gyms, systemUsers, payments, pushSubscriptions, memberNotifications, memberRoutines, workoutSessions, bodyMeasurements } from "@/db/schema";
 import { eq, desc, ilike, or, and, sql } from "drizzle-orm";
 import { auth } from "@/auth";
+import { calculateMemberStatus } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
@@ -71,8 +72,8 @@ export async function createMember(formData: FormData) {
     price: price,
     membershipStart: startDate.toISOString().split("T")[0],
     membershipEnd: endDate.toISOString().split("T")[0],
-    status: "activo",
-    paid: hasPaid,
+    status: calculateMemberStatus(endDate.toISOString().split("T")[0]),
+    paid: calculateMemberStatus(endDate.toISOString().split("T")[0]) === "activo" ? hasPaid : false,
     paymentMethod: paymentMethod,
     photoUrl: (formData.get("photoUrl") as string) || null,
     password: hashedPassword,
@@ -228,10 +229,20 @@ export async function updateMember(id: string, formData: FormData) {
 
   // Financial/membership fields — admin only
   if (currentUser.role === "admin") {
-    baseFields.plan = formData.get("plan") as "mensual" | "trimestral" | "anual";
-    baseFields.price = formData.get("price") as string;
-    baseFields.membershipStart = formData.get("membershipStart") as string;
-    baseFields.membershipEnd = formData.get("membershipEnd") as string;
+    const plan = formData.get("plan") as "mensual" | "trimestral" | "anual";
+    const price = formData.get("price") as string;
+    const start = formData.get("membershipStart") as string;
+    const end = formData.get("membershipEnd") as string;
+
+    baseFields.plan = plan;
+    baseFields.price = price;
+    baseFields.membershipStart = start;
+    baseFields.membershipEnd = end;
+    if (end) {
+      const calculatedStatus = calculateMemberStatus(end);
+      baseFields.status = calculatedStatus;
+      baseFields.paid = calculatedStatus === "activo";
+    }
   }
 
   await db.update(members).set(baseFields as any).where(eq(members.id, id));

@@ -5,6 +5,7 @@ import { members, gyms, systemUsers, groups, payments } from "@/db/schema";
 import { eq, desc, sql, and, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { calculateMemberStatus } from "@/lib/utils";
 
 export async function createGroup(gymId: string, groupData: any, groupMembers: any[]) {
   const session = await auth();
@@ -65,6 +66,9 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
       totalCard += mCard;
       totalAmount += (mPrice + mEnrollment + mCard);
 
+      const endDateStr = endDate.toISOString().split("T")[0];
+      const calculatedStatus = calculateMemberStatus(endDateStr);
+
       const [insertedMember] = await tx.insert(members).values({
         code: memberCode,
         gymId: gym.id,
@@ -78,9 +82,9 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
         plan: plan,
         price: m.price.toString(),
         membershipStart: startDate.toISOString().split("T")[0],
-        membershipEnd: endDate.toISOString().split("T")[0],
-        status: "activo",
-        paid: isPaid,
+        membershipEnd: endDateStr,
+        status: calculatedStatus,
+        paid: calculatedStatus === "activo" ? isPaid : false,
         paymentMethod: paymentMethod,
         registeredBy: currentUser.id,
       }).returning();
@@ -117,7 +121,9 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
       });
       
       // Mark group as paid full
-      await tx.update(groups).set({ paidFull: true }).where(eq(groups.id, insertedGroup.id));
+      const groupEndDateStr = endDate.toISOString().split("T")[0];
+      const groupCalculatedStatus = calculateMemberStatus(groupEndDateStr);
+      await tx.update(groups).set({ paidFull: groupCalculatedStatus === "activo" }).where(eq(groups.id, insertedGroup.id));
     }
   });
 

@@ -5,6 +5,7 @@ import { members, payments, systemUsers, groups, gyms } from "@/db/schema";
 import { eq, ilike, or, and, desc } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { calculateMemberStatus } from "@/lib/utils";
 
 /** Returns members in mora (for default payment list) */
 export async function getMoraMembers(gymFilter?: string) {
@@ -125,12 +126,14 @@ export async function registerPayment(data: {
     // If the new end date is LATER than current membershipEnd, extend it
     const currentEnd = new Date(member.membershipEnd + "T00:00:00");
     const finalEnd = newEndDate > currentEnd ? newEndDate : currentEnd;
+    const finalEndStr = finalEnd.toISOString().split("T")[0];
+    const calculatedStatus = calculateMemberStatus(finalEndStr);
 
     await db.update(members)
       .set({
-        membershipEnd: finalEnd.toISOString().split("T")[0],
-        status: "activo",
-        paid: true,
+        membershipEnd: finalEndStr,
+        status: calculatedStatus,
+        paid: calculatedStatus === "activo",
       })
       .where(eq(members.id, member.id));
 
@@ -138,14 +141,14 @@ export async function registerPayment(data: {
     if (member.groupId && member.isRepresentative) {
       await db.update(members)
         .set({
-          membershipEnd: finalEnd.toISOString().split("T")[0],
-          status: "activo",
-          paid: true,
+          membershipEnd: finalEndStr,
+          status: calculatedStatus,
+          paid: calculatedStatus === "activo",
         })
         .where(eq(members.groupId, member.groupId));
 
       await db.update(groups)
-        .set({ paidFull: true })
+        .set({ paidFull: calculatedStatus === "activo" })
         .where(eq(groups.id, member.groupId));
     }
 
