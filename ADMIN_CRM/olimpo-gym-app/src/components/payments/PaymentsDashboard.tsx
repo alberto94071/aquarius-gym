@@ -55,6 +55,7 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
   const [processing, setProcessing] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [pendingConfirm, setPendingConfirm] = useState<string | null>(null);
 
   // Load mora members by default; search when query is typed
   useEffect(() => {
@@ -89,6 +90,7 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
   const handleSelectMember = async (m: any) => {
     setSuccessMsg("");
     setErrorMsg("");
+    setPendingConfirm(null);
     setSelectedMember(m);
     setSelectedGroup(null);
     setMemberPaymentInfo(null);
@@ -135,11 +137,10 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
     return selectedEnd <= memberEnd;
   })();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedMember || monthAlreadyPaid) return;
+  const submit = async (forceConfirm = false) => {
     setProcessing(true);
     setErrorMsg("");
+    setPendingConfirm(null);
     try {
       await registerPayment({
         memberId: selectedGroup
@@ -150,6 +151,7 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
         amount,
         paymentMethod,
         notes,
+        forceConfirm,
       });
       setSuccessMsg(`Pago de Q${amount} registrado exitosamente.`);
       setSelectedMember(null);
@@ -160,12 +162,23 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
         ? await searchMembersForPayment(query, gymFilter || undefined)
         : await getMoraMembers(gymFilter || undefined);
       setResults(res);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setErrorMsg(err instanceof Error ? err.message : "Error al registrar el pago.");
+      const msg = err instanceof Error ? err.message : "Error al registrar el pago.";
+      if (msg.startsWith("CONFIRM_PAST_MONTH:")) {
+        setPendingConfirm(msg.replace("CONFIRM_PAST_MONTH:", ""));
+      } else {
+        setErrorMsg(msg);
+      }
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedMember || monthAlreadyPaid) return;
+    await submit(false);
   };
 
   // mora si hoy > día 8 del mes siguiente al vencimiento
@@ -467,24 +480,60 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
                 </div>
               )}
 
+              {/* Past month confirmation warning box */}
+              {pendingConfirm && (
+                <div className="p-4 rounded-xl bg-olimpo-gold/15 border border-olimpo-gold/40 space-y-3 mb-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-olimpo-gold shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-olimpo-gold">Confirmación de Pago Pasado</p>
+                      <p className="text-sm text-olimpo-text/90 mt-0.5">{pendingConfirm}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setPendingConfirm(null)}
+                      className="flex-1 py-2 px-4 rounded-lg bg-olimpo-bg border border-olimpo-surface-light text-olimpo-text-muted hover:text-olimpo-text transition-colors text-sm font-medium"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => submit(true)}
+                      disabled={processing}
+                      className="flex-1 py-2 px-4 rounded-lg bg-olimpo-gold text-black hover:bg-olimpo-gold-light transition-colors text-sm font-bold disabled:opacity-50"
+                    >
+                      {processing ? "Procesando..." : "Sí, confirmar pago pasado"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Server error */}
               {errorMsg && (
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-olimpo-red/10 border border-olimpo-red/40">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-olimpo-red/10 border border-olimpo-red/40 mb-4">
                   <AlertTriangle className="w-5 h-5 text-olimpo-red shrink-0 mt-0.5" />
                   <p className="text-sm text-olimpo-red">{errorMsg}</p>
                 </div>
               )}
 
               <div className="pt-4 border-t border-olimpo-surface-light">
-                <button
-                  type="submit"
-                  disabled={processing || monthAlreadyPaid}
-                  className="w-full py-4 rounded-xl font-bold text-lg bg-olimpo-gold text-black hover:bg-olimpo-gold-light transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-olimpo-gold/20"
-                >
-                  {processing
-                    ? <Loader2 className="w-6 h-6 animate-spin" />
-                    : (selectedGroup && paymentType === "mensualidad" ? "Pagar para todos los del Grupo" : "Confirmar e Imprimir Recibo")}
-                </button>
+                {!pendingConfirm ? (
+                  <button
+                    type="submit"
+                    disabled={processing || monthAlreadyPaid}
+                    className="w-full py-4 rounded-xl font-bold text-lg bg-olimpo-gold text-black hover:bg-olimpo-gold-light transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-olimpo-gold/20"
+                  >
+                    {processing
+                      ? <Loader2 className="w-6 h-6 animate-spin" />
+                      : (selectedGroup && paymentType === "mensualidad" ? "Pagar para todos los del Grupo" : "Confirmar e Imprimir Recibo")}
+                  </button>
+                ) : (
+                  <p className="text-xs text-olimpo-text-muted text-center py-2">
+                    Por favor confirma o cancela la advertencia de mes pasado de arriba para continuar.
+                  </p>
+                )}
               </div>
             </form>
           </div>
