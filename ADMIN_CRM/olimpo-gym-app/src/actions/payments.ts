@@ -114,26 +114,48 @@ export async function registerPayment(data: {
       };
     }
 
-    // ── Past-month warning (server-side) ────────────────────────────────
-    // We only apply this guard if forceConfirm is NOT set
+    // ── Validation: Check for skipped intermediate months & past months ─
+    const currentEnd = new Date(member.membershipEnd + "T12:00:00");
+    const nextPayDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth() + 1, 1);
+    const selectedPayDate = new Date(yyyy, mm - 1, 1);
+
+    const skippedMonths: string[] = [];
+    const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+    let currentIter = new Date(nextPayDate.getFullYear(), nextPayDate.getMonth(), 1);
+    while (currentIter < selectedPayDate) {
+      const monthLabel = `${MONTHS_ES[currentIter.getMonth()]} ${currentIter.getFullYear()}`;
+      skippedMonths.push(monthLabel);
+      currentIter.setMonth(currentIter.getMonth() + 1);
+    }
+
     const selectedMonthIsPast =
       yyyy < today.getFullYear() ||
       (yyyy === today.getFullYear() && mm < today.getMonth() + 1);
 
-    if (selectedMonthIsPast && !data.forceConfirm) {
-      const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-      // Return a special error code so the client can show a confirmation dialog
-      return {
-        success: false,
-        error: "CONFIRM_PAST_MONTH",
-        message: `${MONTHS_ES[mm - 1]} ${yyyy} es un mes pasado. ¿Confirmas que deseas registrar este pago?`
-      };
+    // Combine warnings if not confirmed yet
+    if (!data.forceConfirm) {
+      const warnings: string[] = [];
+      if (selectedMonthIsPast) {
+        warnings.push(`${MONTHS_ES[mm - 1]} ${yyyy} es un mes pasado.`);
+      }
+      if (skippedMonths.length > 0) {
+        warnings.push(`El usuario tiene meses pendientes sin pagar: ${skippedMonths.join(", ")}.`);
+      }
+
+      if (warnings.length > 0) {
+        return {
+          success: false,
+          error: "CONFIRM_PAST_MONTH", // Re-use the existing frontend warning UI state
+          message: `${warnings.join(" ")} ¿Confirmas que deseas registrar este pago?`
+        };
+      }
     }
     // ────────────────────────────────────────────────────────────────────
 
     // If the new end date is LATER than current membershipEnd, extend it
-    const currentEnd = new Date(member.membershipEnd + "T00:00:00");
-    const finalEnd = newEndDate > currentEnd ? newEndDate : currentEnd;
+    const currentEndObj = new Date(member.membershipEnd + "T00:00:00");
+    const finalEnd = newEndDate > currentEndObj ? newEndDate : currentEndObj;
     const finalEndStr = finalEnd.toISOString().split("T")[0];
     const calculatedStatus = calculateMemberStatus(finalEndStr);
 
