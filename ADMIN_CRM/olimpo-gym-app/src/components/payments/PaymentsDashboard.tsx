@@ -142,7 +142,7 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
     setErrorMsg("");
     setPendingConfirm(null);
     try {
-      await registerPayment({
+      const res = await registerPayment({
         memberId: selectedGroup
           ? selectedGroup.groupMembers.find((gm: any) => gm.isRepresentative)?.id || selectedMember.id
           : selectedMember.id,
@@ -153,23 +153,28 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
         notes,
         forceConfirm,
       });
+
+      if (res && !res.success) {
+        if (res.error === "CONFIRM_PAST_MONTH") {
+          setPendingConfirm(res.message || "");
+        } else {
+          setErrorMsg(res.message || "Error al registrar el pago.");
+        }
+        return;
+      }
+
       setSuccessMsg(`Pago de Q${amount} registrado exitosamente.`);
       setSelectedMember(null);
       setSelectedGroup(null);
       setMemberPaymentInfo(null);
       // Refresh list — morosos if no query, search otherwise
-      const res = query.trim()
+      const listRes = query.trim()
         ? await searchMembersForPayment(query, gymFilter || undefined)
         : await getMoraMembers(gymFilter || undefined);
-      setResults(res);
+      setResults(listRes);
     } catch (err: unknown) {
       console.error(err);
-      const msg = err instanceof Error ? err.message : "Error al registrar el pago.";
-      if (msg.startsWith("CONFIRM_PAST_MONTH:")) {
-        setPendingConfirm(msg.replace("CONFIRM_PAST_MONTH:", ""));
-      } else {
-        setErrorMsg(msg);
-      }
+      setErrorMsg(err instanceof Error ? err.message : "Error al registrar el pago.");
     } finally {
       setProcessing(false);
     }

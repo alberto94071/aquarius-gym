@@ -81,7 +81,7 @@ export function RegisterPaymentModal({
     setError("");
     setPendingConfirm(null);
     try {
-      await registerPayment({
+      const res = await registerPayment({
         memberId,
         paymentType,
         paymentMonth: paymentType === "mensualidad" ? paymentMonth : undefined,
@@ -90,16 +90,21 @@ export function RegisterPaymentModal({
         notes,
         forceConfirm,
       });
+
+      if (res && !res.success) {
+        if (res.error === "CONFIRM_PAST_MONTH") {
+          setPendingConfirm(res.message || "");
+        } else {
+          setError(res.message || "Error al registrar el pago.");
+        }
+        return;
+      }
+
       setLastPaymentMonth(paymentType === "mensualidad" ? paymentMonth : null);
       setSuccess(true);
       router.refresh();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al registrar el pago.";
-      if (msg.startsWith("CONFIRM_PAST_MONTH:")) {
-        setPendingConfirm(msg.replace("CONFIRM_PAST_MONTH:", ""));
-      } else {
-        setError(msg);
-      }
+      setError(err instanceof Error ? err.message : "Error al registrar el pago.");
     } finally {
       setLoading(false);
     }

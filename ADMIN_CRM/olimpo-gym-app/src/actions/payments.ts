@@ -107,9 +107,11 @@ export async function registerPayment(data: {
     const key = `${yyyy}-${String(mm).padStart(2, "0")}`;
     if (paidMonths.includes(key)) {
       const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-      throw new Error(
-        `${MONTHS_ES[mm - 1]} ${yyyy} ya está pagado para este miembro. Selecciona otro mes.`
-      );
+      return {
+        success: false,
+        error: "ALREADY_PAID",
+        message: `${MONTHS_ES[mm - 1]} ${yyyy} ya está pagado para este miembro. Selecciona otro mes.`
+      };
     }
 
     // ── Past-month warning (server-side) ────────────────────────────────
@@ -121,7 +123,11 @@ export async function registerPayment(data: {
     if (selectedMonthIsPast && !data.forceConfirm) {
       const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
       // Return a special error code so the client can show a confirmation dialog
-      throw new Error(`CONFIRM_PAST_MONTH:${MONTHS_ES[mm - 1]} ${yyyy} es un mes pasado. ¿Confirmas que deseas registrar este pago?`);
+      return {
+        success: false,
+        error: "CONFIRM_PAST_MONTH",
+        message: `${MONTHS_ES[mm - 1]} ${yyyy} es un mes pasado. ¿Confirmas que deseas registrar este pago?`
+      };
     }
     // ────────────────────────────────────────────────────────────────────
 
