@@ -3,8 +3,10 @@
 import { db } from "@/db";
 import { members, payments, groups, gyms } from "@/db/schema";
 import { eq, and, sql, gte, lt } from "drizzle-orm";
+import { syncMembersStatus } from "@/lib/sync";
 
 export async function getDashboardData(gymIdFilter?: string) {
+  await syncMembersStatus();
   const today = new Date();
   
   const conditions = [];

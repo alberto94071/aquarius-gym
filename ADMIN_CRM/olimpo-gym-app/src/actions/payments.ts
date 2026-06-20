@@ -6,9 +6,11 @@ import { eq, ilike, or, and, desc } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { calculateMemberStatus } from "@/lib/utils";
+import { syncMembersStatus } from "@/lib/sync";
 
 /** Returns members in mora (for default payment list) */
 export async function getMoraMembers(gymFilter?: string) {
+  await syncMembersStatus();
   const session = await auth();
   if (!session?.user) throw new Error("No autorizado");
 

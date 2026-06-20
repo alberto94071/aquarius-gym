@@ -6,6 +6,7 @@ import { eq, desc, sql, and, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { calculateMemberStatus } from "@/lib/utils";
+import { syncMembersStatus } from "@/lib/sync";
 
 export async function createGroup(gymId: string, groupData: any, groupMembers: any[]) {
   const session = await auth();
@@ -132,6 +133,7 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
 }
 
 export async function getGroups(params?: { searchQuery?: string, gymIdFilter?: string, limit?: number, offset?: number }) {
+  await syncMembersStatus();
   const session = await auth();
   if (!session?.user) throw new Error("No autorizado");
 
