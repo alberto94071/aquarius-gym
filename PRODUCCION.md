@@ -49,7 +49,21 @@ El script:
 - Se agregó **timeout de 15 s** y mensajes claros de "sin conexión" en el cliente HTTP de la app.
 - Mejora futura (no bloqueante): cache local con `AsyncStorage` para mostrar el último estado conocido sin conexión, y `stale-while-revalidate` en anuncios.
 
-## 6. Prueba end-to-end sugerida antes del lanzamiento
+## 6. Regla de vencimiento (lógica de Aquarius)
+
+- La membresía **vence el mismo día del mes en que el miembro se inscribió**
+  (inscrito el 14 de julio → vence el 14 de agosto; trimestral → 14 de octubre;
+  anual → 14 de julio del año siguiente). Si el mes destino es más corto
+  (día 31 → febrero), vence el último día de ese mes, sin perder el día
+  original en los meses siguientes.
+- Cada pago mensual extiende un mes desde la fecha de vencimiento vigente.
+- **Mora:** 7 días de gracia después de la fecha exacta de vencimiento
+  (vence el 14 → entra en mora el 22). Antes la gracia era hasta el día 8 del
+  mes siguiente porque todo vencía a fin de mes.
+- Los recordatorios push automáticos (7 días antes y 1 día antes) usan la
+  fecha exacta de vencimiento de cada miembro.
+
+## 7. Prueba end-to-end sugerida antes del lanzamiento
 
 1. Correr `db:reset` → entrar al panel → verificar que solo existen las 3 sedes.
 2. Crear una secretaria por sede (rol "Secretaria" + sede asignada).

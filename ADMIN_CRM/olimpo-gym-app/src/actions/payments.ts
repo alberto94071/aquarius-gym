@@ -5,7 +5,7 @@ import { members, payments, systemUsers, groups, gyms } from "@/db/schema";
 import { eq, ilike, or, and, desc } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { calculateMemberStatus } from "@/lib/utils";
+import { calculateMemberStatus, anniversaryDate } from "@/lib/utils";
 import { syncMembersStatus } from "@/lib/sync";
 
 /** Returns members in mora (for default payment list) */
@@ -62,16 +62,23 @@ export async function getMemberPaidMonths(memberId: string): Promise<string[]> {
     .from(payments)
     .where(eq(payments.memberId, memberId));
 
+  // Cada periodo cubre meses de aniversario y su clave es el mes donde INICIA:
+  // un pago mensual iniciado el 14-jul cubre solo "jul"; uno trimestral
+  // 14-jul→14-oct cubre jul, ago y sep. La cantidad de meses cubiertos es la
+  // diferencia de meses calendario entre inicio y fin (mínimo 1).
   const paid: string[] = [];
   for (const p of paymentHistory) {
     if (!p.periodStart || !p.periodEnd) continue;
-    const d1 = new Date(p.periodStart + "T00:00:00");
-    const d2 = new Date(p.periodEnd + "T00:00:00");
-    const c = new Date(d1.getFullYear(), d1.getMonth(), 1);
-    while (c <= d2) {
+    const d1 = new Date(p.periodStart + "T12:00:00");
+    const d2 = new Date(p.periodEnd + "T12:00:00");
+    const monthsCovered = Math.max(
+      1,
+      (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth())
+    );
+    for (let i = 0; i < monthsCovered; i++) {
+      const c = new Date(d1.getFullYear(), d1.getMonth() + i, 1);
       const k = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}`;
       if (!paid.includes(k)) paid.push(k);
-      c.setMonth(c.getMonth() + 1);
     }
   }
   return paid;
@@ -96,11 +103,17 @@ export async function registerPayment(data: {
 
   const today = new Date();
   let newEndDate = new Date(member.membershipEnd);
+  let periodStartDate: Date | null = null;
 
   if (data.paymentType === "mensualidad" && data.paymentMonth) {
     const [yyyy, mm] = data.paymentMonth.split("-").map(Number);
-    // Last day of selected month
-    newEndDate = new Date(yyyy, mm, 0);
+
+    // Día de aniversario: el día del mes en que el miembro se inscribió.
+    // El periodo pagado inicia ese día del mes seleccionado y vence el mismo
+    // día del mes siguiente (ajustado en meses cortos).
+    const anchorDay = new Date(member.membershipStart + "T12:00:00").getDate();
+    periodStartDate = anniversaryDate(yyyy, mm - 1, anchorDay);
+    newEndDate = anniversaryDate(yyyy, mm, anchorDay);
 
     // ── Guard: already paid check using actual payment history ──────────
     const paidMonths = await getMemberPaidMonths(data.memberId);
@@ -115,8 +128,10 @@ export async function registerPayment(data: {
     }
 
     // ── Validation: Check for skipped intermediate months & past months ─
+    // El siguiente periodo a pagar inicia en la fecha de vencimiento actual,
+    // así que el "mes a pagar" es el mes de membershipEnd.
     const currentEnd = new Date(member.membershipEnd + "T12:00:00");
-    const nextPayDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth() + 1, 1);
+    const nextPayDate = new Date(currentEnd.getFullYear(), currentEnd.getMonth(), 1);
     const selectedPayDate = new Date(yyyy, mm - 1, 1);
 
     const skippedMonths: string[] = [];
@@ -182,8 +197,8 @@ export async function registerPayment(data: {
         .where(eq(groups.id, member.groupId));
     }
 
-    // Use the actual start of the selected month as periodStart
-    const periodStart = new Date(yyyy, mm - 1, 1).toISOString().split("T")[0];
+    // El periodo pagado inicia en el día de aniversario del mes seleccionado
+    const periodStart = periodStartDate!.toISOString().split("T")[0];
 
     await db.insert(payments).values({
       gymId: member.gymId,
@@ -265,8 +280,9 @@ export async function getMemberPaymentInfo(memberId: string) {
   const today = new Date();
   const endDate = new Date(row.member.membershipEnd + "T00:00:00");
 
-  // Next month to pay = month after membershipEnd
-  const next = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 1);
+  // El siguiente periodo inicia en la fecha de vencimiento actual, así que
+  // el próximo mes a cobrar es el mes de membershipEnd
+  const next = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
   const nextMonthToPay = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
 
   // Days since membership expired (0 if still active)

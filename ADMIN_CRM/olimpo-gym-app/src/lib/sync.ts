@@ -5,11 +5,11 @@ import { and, eq, sql, inArray } from "drizzle-orm";
 export async function syncMembersStatus() {
   const today = new Date().toISOString().split("T")[0];
 
-  // 1. Marcar como "mora" a quienes superaron el plazo de gracia (8 del mes siguiente)
+  // 1. Marcar como "mora" a quienes superaron el plazo de gracia (7 días tras el vencimiento)
   await db.update(members)
     .set({ status: "mora", paid: false })
     .where(and(
-      sql`(DATE_TRUNC('month', ${members.membershipEnd}::date) + '1 month 7 days'::interval)::date < ${today}::date`,
+      sql`(${members.membershipEnd}::date + '7 days'::interval)::date < ${today}::date`,
       eq(members.status, "activo")
     ));
 
@@ -17,7 +17,7 @@ export async function syncMembersStatus() {
   await db.update(members)
     .set({ status: "activo", paid: true })
     .where(and(
-      sql`(DATE_TRUNC('month', ${members.membershipEnd}::date) + '1 month 7 days'::interval)::date >= ${today}::date`,
+      sql`(${members.membershipEnd}::date + '7 days'::interval)::date >= ${today}::date`,
       eq(members.status, "mora")
     ));
 

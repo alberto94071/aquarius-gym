@@ -128,13 +128,12 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
     }
   };
 
-  // Check if the selected month is already covered by the membership
+  // Check if the selected month is already covered by the membership.
+  // Con vencimiento por aniversario, el siguiente periodo a pagar inicia en el
+  // mes de membershipEnd (nextMonthToPay); meses anteriores ya están cubiertos.
   const monthAlreadyPaid = (() => {
     if (!memberPaymentInfo || !paymentMonth || paymentType !== "mensualidad") return false;
-    const [yyyy, mm] = paymentMonth.split("-").map(Number);
-    const selectedEnd = new Date(yyyy, mm, 0); // last day of selected month
-    const memberEnd = new Date(memberPaymentInfo.membershipEnd + "T00:00:00");
-    return selectedEnd <= memberEnd;
+    return paymentMonth < memberPaymentInfo.nextMonthToPay;
   })();
 
   const submit = async (forceConfirm = false) => {
@@ -434,7 +433,7 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
                     className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-xl px-4 py-3 text-olimpo-text focus:outline-none focus:border-olimpo-gold"
                   />
                   <p className="text-xs text-olimpo-text-muted mt-1">
-                    La membresía se extenderá hasta el último día del mes seleccionado.
+                    El pago cubre un mes desde el día de inscripción: la membresía vencerá el mismo día del mes siguiente al seleccionado.
                   </p>
                 </div>
               )}

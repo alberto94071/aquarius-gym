@@ -5,7 +5,7 @@ import { members, gyms, systemUsers, groups, payments } from "@/db/schema";
 import { eq, desc, sql, and, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { calculateMemberStatus } from "@/lib/utils";
+import { calculateMemberStatus, addMonthsAnniversary, planMonths } from "@/lib/utils";
 import { syncMembersStatus } from "@/lib/sync";
 
 export async function createGroup(gymId: string, groupData: any, groupMembers: any[]) {
@@ -37,12 +37,10 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
 
     // 2. Insert members
     const startDate = new Date();
-    let endDate = new Date(startDate);
     const plan = groupData.plan as "mensual" | "trimestral" | "anual";
-    
-    if (plan === "mensual") endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0); 
-    else if (plan === "trimestral") endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 0);
-    else if (plan === "anual") endDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), 0);
+
+    // Vence el mismo día del mes en que se inscribió (aniversario)
+    const endDate = addMonthsAnniversary(startDate, planMonths(plan));
 
     const isPaid = groupData.paid === "true";
     const paymentMethod = groupData.paymentMethod || null;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createMember } from "@/actions/members";
 import { Loader2, Calculator, Copy, CheckCircle, Info } from "lucide-react";
 import { PhotoUploader } from "@/components/ui/PhotoUploader";
+import { addMonthsAnniversary, planMonths } from "@/lib/utils";
 
 const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -12,14 +13,11 @@ function todayStr() {
   return new Date().toISOString().split("T")[0];
 }
 
-/** Given a start date string (YYYY-MM-DD) and plan, return end date */
+/** Vence el mismo día del mes de la inscripción (aniversario) */
 function calcEndDate(startStr: string, plan: string): string {
   if (!startStr) return "";
   const d = new Date(startStr + "T12:00:00");
-  let end: Date;
-  if (plan === "mensual") end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  else if (plan === "trimestral") end = new Date(d.getFullYear(), d.getMonth() + 3, 0);
-  else end = new Date(d.getFullYear() + 1, d.getMonth(), 0);
+  const end = addMonthsAnniversary(d, planMonths(plan as "mensual" | "trimestral" | "anual"));
   return end.toISOString().split("T")[0];
 }
 

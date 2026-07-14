@@ -16,15 +16,15 @@ export async function GET(req: NextRequest) {
     const todayStr = today.toISOString().split("T")[0];
 
     // ── 1. Actualizar estados automáticamente ────────────────────────────
-    // Regla: gracia hasta el día 8 del mes siguiente al vencimiento.
-    // mora si: DATE_TRUNC('month', membershipEnd) + '1 month 7 days' < hoy
+    // Regla: 7 días de gracia después de la fecha exacta de vencimiento.
+    // mora si: membershipEnd + 7 días de gracia < hoy
 
     // Marcar como "mora" a quienes superaron el plazo de gracia
     await db.update(members)
       .set({ status: "mora", paid: false })
       .where(
         and(
-          sql`(DATE_TRUNC('month', ${members.membershipEnd}::date) + '1 month 7 days'::interval)::date < ${todayStr}::date`,
+          sql`(${members.membershipEnd}::date + '7 days'::interval)::date < ${todayStr}::date`,
           eq(members.status, "activo")
         )
       );
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       .set({ status: "activo", paid: true })
       .where(
         and(
-          sql`(DATE_TRUNC('month', ${members.membershipEnd}::date) + '1 month 7 days'::interval)::date >= ${todayStr}::date`,
+          sql`(${members.membershipEnd}::date + '7 days'::interval)::date >= ${todayStr}::date`,
           eq(members.status, "mora")
         )
       );
