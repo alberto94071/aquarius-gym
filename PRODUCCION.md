@@ -36,7 +36,7 @@ El script:
 
 ## 4. App móvil — antes de subir a las tiendas
 
-- [ ] **Cambiar el package/bundle id** en `olimpo-gym-mobile/app.json`: sigue siendo `com.olimpogym.mobile`. Una vez publicado en Play Store **no se puede cambiar jamás**. Decidir ahora si será `com.aquariusgym.mobile`. Ojo: el client ID de Google para Android está atado al package name + huella SHA-1, así que hay que crear/actualizar el OAuth client en Google Cloud al cambiarlo.
+- [x] **Package/bundle id**: ya quedó como `com.aquariusgym.mobile` (Android e iOS) y el scheme de deep links como `aquariusgym`. Pendiente de tu lado: crear el OAuth client de **Android** en Google Cloud con este package + SHA-1, y usar este mismo package al registrar la app en Firebase (ver `CONFIGURACION.md`).
 - [ ] `EXPO_PUBLIC_API_URL` apuntando al dominio de producción del CRM (https).
 - [ ] `eas build --profile production --platform android` y probar el APK/AAB en dispositivo físico (login, push, pagos reflejados).
 - [ ] Probar push notification real: crear anuncio con push desde el panel → debe llegar al teléfono.

@@ -51,9 +51,11 @@ DOS OAuth Client IDs:
 
 ### Paso 2 — El OAuth client de Android necesita el package name y el SHA-1
 
-- **Package name:** el de `app.json` → hoy es `com.olimpogym.mobile`
-  (si lo cambias a `com.aquariusgym.mobile` antes de publicar, hay que crear el
-  client de Android de nuevo con el package nuevo).
+- **Package name:** el de `app.json` → **`com.aquariusgym.mobile`** (ya se cambió
+  al de Aquarius). ⚠️ El OAuth client de Android que existía apuntaba a
+  `com.olimpogym.mobile`: hay que **crear un OAuth client de Android nuevo** en
+  Google Cloud con `com.aquariusgym.mobile` + el SHA-1, y en Firebase registrar
+  la app Android con este package al configurar las push.
 - **SHA-1:** la huella del keystore con que EAS firma tu app. La obtienes con:
 
 ```bash
