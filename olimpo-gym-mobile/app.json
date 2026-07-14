@@ -51,9 +51,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "ffa1fb35-0026-4c5f-9938-76f0e403147c"
+        "projectId": "b286b1ce-54d1-46d2-ba74-22f8292c224e"
       }
-    },
-    "owner": "olimpo_gym"
+    }
   }
 }
