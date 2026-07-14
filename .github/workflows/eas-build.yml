@@ -1,0 +1,44 @@
+name: EAS Build (app móvil)
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Perfil de build (development | preview | production)"
+        required: true
+        default: "development"
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+
+jobs:
+  build:
+    name: Build Android (${{ inputs.profile }})
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        working-directory: olimpo-gym-mobile
+        run: npm ci
+
+      - name: Lanzar build en EAS
+        working-directory: olimpo-gym-mobile
+        run: eas build --platform android --profile ${{ inputs.profile }} --non-interactive --no-wait
+
+      - name: Nota
+        run: echo "Build encolado en EAS. Sigue el progreso y descarga el APK/AAB en https://expo.dev"
