@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Aquarius Gym",
-    "slug": "olimpo-gym-mobile",
+    "slug": "aquarius-gym",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
