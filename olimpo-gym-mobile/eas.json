@@ -11,7 +11,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://crm-olimpo-gym.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://crm-aquariusgym.vercel.app",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "41057349899-b1a1447e13uuu6h8ul341t61qf3dgsff.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "41057349899-6tmscbsnl91vas1lec8uoqhcbr8m0i1q.apps.googleusercontent.com"
       }
@@ -22,7 +22,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://crm-olimpo-gym.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://crm-aquariusgym.vercel.app",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "41057349899-b1a1447e13uuu6h8ul341t61qf3dgsff.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "41057349899-6tmscbsnl91vas1lec8uoqhcbr8m0i1q.apps.googleusercontent.com"
       }
@@ -33,7 +33,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://crm-olimpo-gym.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://crm-aquariusgym.vercel.app",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "41057349899-b1a1447e13uuu6h8ul341t61qf3dgsff.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID": "41057349899-6tmscbsnl91vas1lec8uoqhcbr8m0i1q.apps.googleusercontent.com"
       }
