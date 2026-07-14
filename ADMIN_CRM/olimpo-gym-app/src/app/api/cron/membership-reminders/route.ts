@@ -40,14 +40,21 @@ export async function GET(req: NextRequest) {
       );
     // ────────────────────────────────────────────────────────────────────
 
-    // Fechas de referencia: membershipEnd = today+7 o today+1
+    // Fechas de referencia: membershipEnd = today+7 o today+1 (antes de vencer),
+    // today-7 (último día de gracia, mañana entra en mora) y today-8 (hoy entró en mora)
     const in7Days = new Date(today);
     in7Days.setDate(today.getDate() + 7);
     const in1Day = new Date(today);
     in1Day.setDate(today.getDate() + 1);
+    const graceEnds = new Date(today);
+    graceEnds.setDate(today.getDate() - 7);
+    const moraStarted = new Date(today);
+    moraStarted.setDate(today.getDate() - 8);
 
     const in7Str = in7Days.toISOString().split("T")[0];
     const in1Str = in1Day.toISOString().split("T")[0];
+    const graceEndsStr = graceEnds.toISOString().split("T")[0];
+    const moraStartedStr = moraStarted.toISOString().split("T")[0];
 
     // Miembros cuya membresía vence en exactamente 7 días
     const expiring7 = await db
@@ -67,6 +74,28 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           sql`DATE(${members.membershipEnd}) = ${in1Str}`,
+          inArray(members.status, ["activo", "mora"])
+        )
+      );
+
+    // Miembros en su último día de gracia (mañana entran en mora)
+    const graceEnding = await db
+      .select({ id: members.id, name: members.name })
+      .from(members)
+      .where(
+        and(
+          sql`DATE(${members.membershipEnd}) = ${graceEndsStr}`,
+          inArray(members.status, ["activo", "mora"])
+        )
+      );
+
+    // Miembros que hoy entraron en mora
+    const enteredMora = await db
+      .select({ id: members.id, name: members.name })
+      .from(members)
+      .where(
+        and(
+          sql`DATE(${members.membershipEnd}) = ${moraStartedStr}`,
           inArray(members.status, ["activo", "mora"])
         )
       );
@@ -131,13 +160,29 @@ export async function GET(req: NextRequest) {
       "payment_reminder"
     );
 
+    await notifyGroup(
+      graceEnding,
+      "⏳ Último día antes de entrar en mora",
+      "Hola {nombre}, hoy es tu último día de gracia. Si no renuevas hoy, mañana tu membresía de Aquarius Gym entrará en mora.",
+      "payment_reminder"
+    );
+
+    await notifyGroup(
+      enteredMora,
+      "🔴 Tu membresía entró en mora",
+      "Hola {nombre}, tu membresía de Aquarius Gym entró en mora. Pasa a tu sede a renovarla para seguir entrenando.",
+      "payment_reminder"
+    );
+
     console.log(
-      `[membership-reminders] 7d: ${expiring7.length}, 1d: ${expiring1.length}, pushes enviados: ${sent}`
+      `[membership-reminders] 7d: ${expiring7.length}, 1d: ${expiring1.length}, gracia: ${graceEnding.length}, mora: ${enteredMora.length}, pushes enviados: ${sent}`
     );
 
     return NextResponse.json({
       expiring7: expiring7.length,
       expiring1: expiring1.length,
+      graceEnding: graceEnding.length,
+      enteredMora: enteredMora.length,
       sent,
     });
   } catch (error) {
