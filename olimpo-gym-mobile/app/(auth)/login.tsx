@@ -49,6 +49,12 @@ export default function LoginScreen() {
         // ya en progreso
       } else if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         Alert.alert("Error", "Google Play Services no está disponible.");
+      } else if (code === "DEVELOPER_ERROR") {
+        // Configuración de Google Cloud incorrecta (SHA-1/package del OAuth client)
+        Alert.alert(
+          "Configuración pendiente",
+          "El inicio con Google no está configurado para esta versión de la app (SHA-1/package). Usa el acceso con correo mientras tanto."
+        );
       } else if (err instanceof ApiError) {
         const msg =
           err.status === 404

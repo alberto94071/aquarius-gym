@@ -7,10 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Image,
-  useWindowDimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import RenderHtml from "react-native-render-html";
+import { HtmlView } from "@/components/HtmlView";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
 import type { Announcement } from "@/lib/types";
@@ -23,7 +22,6 @@ function isHtml(str: string): boolean {
 export default function AnnouncementDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { width } = useWindowDimensions();
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -88,25 +86,9 @@ export default function AnnouncementDetailScreen() {
 
       <View style={styles.divider} />
 
-      {/* Body: HTML or plain text */}
+      {/* Body: HTML (WebView, respeta el CSS tal cual) o texto plano */}
       {bodyIsHtml ? (
-        <RenderHtml
-          contentWidth={width - 40}
-          source={{ html: announcement.body }}
-          tagsStyles={{
-            body: { color: Colors.text, fontSize: 15, lineHeight: 24 },
-            p:    { color: Colors.text, fontSize: 15, lineHeight: 24, marginBottom: 12 },
-            h2:   { color: Colors.gold, fontSize: 20, fontWeight: "700", marginBottom: 8, marginTop: 16 },
-            h3:   { color: Colors.gold, fontSize: 17, fontWeight: "700", marginBottom: 6, marginTop: 12 },
-            b:    { color: Colors.text, fontWeight: "700" },
-            i:    { color: Colors.dim, fontStyle: "italic" },
-            ul:   { marginBottom: 12 },
-            li:   { color: Colors.text, fontSize: 14, lineHeight: 22, marginBottom: 4 },
-            hr:   { backgroundColor: Colors.border, height: 1, marginVertical: 16 },
-            a:    { color: Colors.gold },
-          }}
-          systemFonts={["System"]}
-        />
+        <HtmlView html={announcement.body} />
       ) : (
         <Text style={styles.bodyPlain}>{announcement.body}</Text>
       )}

@@ -18,11 +18,7 @@ import YoutubePlayer from "react-native-youtube-iframe";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
 import type { Routine, WorkoutSession, SetLog } from "@/lib/types";
-
-function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
+import { getYouTubeId } from "@/lib/youtube";
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 
