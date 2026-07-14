@@ -21,13 +21,7 @@ export function UserFormModal({ gyms, onClose }: { gyms: any[], onClose: () => v
     setError("");
 
     try {
-      let dbRole = "admin";
-      if (roleSelection === "secretaria") {
-        const gym = gyms.find(g => g.id === gymId);
-        if (gym?.codePrefix === "OGRB") dbRole = "secretaria_rb";
-        else if (gym?.codePrefix === "OGSB") dbRole = "secretaria_sb";
-        else dbRole = "secretaria_sb"; // Fallback
-      }
+      const dbRole = roleSelection === "secretaria" ? "secretaria" : "admin";
 
       const res = await createSystemUser({
         email,

@@ -1,9 +1,18 @@
 import { SignJWT, jwtVerify } from "jose";
 import { NextRequest } from "next/server";
 
-const SECRET = new TextEncoder().encode(
-  process.env.MOBILE_JWT_SECRET || "fallback-dev-secret-change-in-prod"
-);
+function getSecret(): Uint8Array {
+  const secret = process.env.MOBILE_JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("MOBILE_JWT_SECRET no está configurado en producción");
+    }
+    return new TextEncoder().encode("fallback-dev-secret-change-in-prod");
+  }
+  return new TextEncoder().encode(secret);
+}
+
+const SECRET = getSecret();
 
 export interface MobileJWTPayload {
   memberId: string;
@@ -15,7 +24,7 @@ export async function signMobileJWT(payload: MobileJWTPayload): Promise<string> 
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("90d")
+    .setExpirationTime("30d")
     .sign(SECRET);
 }
 

@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { members, gyms, systemUsers, payments, pushSubscriptions, memberNotifications, memberRoutines, workoutSessions, bodyMeasurements } from "@/db/schema";
 import { eq, desc, ilike, or, and, sql } from "drizzle-orm";
 import { auth } from "@/auth";
-import { calculateMemberStatus } from "@/lib/utils";
+import { calculateMemberStatus, addMonthsAnniversary, planMonths } from "@/lib/utils";
 import { syncMembersStatus } from "@/lib/sync";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -46,10 +46,8 @@ export async function createMember(formData: FormData) {
   const startDateStr = formData.get("membershipStart") as string;
   const startDate = startDateStr ? new Date(startDateStr + "T12:00:00") : new Date();
 
-  let endDate = new Date(startDate);
-  if (plan === "mensual") endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
-  else if (plan === "trimestral") endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 3, 0);
-  else if (plan === "anual") endDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), 0);
+  // Vence el mismo día del mes en que se inscribió (aniversario)
+  const endDate = addMonthsAnniversary(startDate, planMonths(plan));
 
   const price = formData.get("price") as string;
   const enrollmentFee = formData.get("enrollmentFee") as string || "0";

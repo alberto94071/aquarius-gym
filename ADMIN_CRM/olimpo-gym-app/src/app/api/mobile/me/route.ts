@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { members, gyms, groups, payments } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getMobileAuth } from "@/lib/mobile-auth";
+import { calculateMemberStatus } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   try {
@@ -102,8 +103,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Effective status: if in a group with paidFull=false → bloqueado
-    let effectiveStatus = row.status;
+    // Estado efectivo calculado EN VIVO (no depende de que el cron ya haya
+    // actualizado la BD): activo/mora según la fecha de vencimiento y la
+    // gracia de 7 días. Los estados manuales bloqueado/vencido se respetan.
+    let effectiveStatus: string = row.status;
+    if (row.status === "activo" || row.status === "mora") {
+      effectiveStatus = calculateMemberStatus(row.membershipEnd);
+    }
     if (groupInfo && !groupInfo.paidFull) {
       effectiveStatus = "bloqueado";
     }

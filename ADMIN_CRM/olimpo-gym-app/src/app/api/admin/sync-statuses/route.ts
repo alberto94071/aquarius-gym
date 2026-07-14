@@ -13,11 +13,11 @@ export async function POST() {
 
   const today = new Date().toISOString().split("T")[0];
 
-  // mora si superó el día 8 del mes siguiente al vencimiento
+  // mora si superó los 7 días de gracia tras el vencimiento
   const toMora = await db.update(members)
     .set({ status: "mora", paid: false })
     .where(and(
-      sql`(DATE_TRUNC('month', ${members.membershipEnd}::date) + '1 month 7 days'::interval)::date < ${today}::date`,
+      sql`(${members.membershipEnd}::date + '7 days'::interval)::date < ${today}::date`,
       eq(members.status, "activo")
     ))
     .returning({ id: members.id });
@@ -26,7 +26,7 @@ export async function POST() {
   const toActivo = await db.update(members)
     .set({ status: "activo", paid: true })
     .where(and(
-      sql`(DATE_TRUNC('month', ${members.membershipEnd}::date) + '1 month 7 days'::interval)::date >= ${today}::date`,
+      sql`(${members.membershipEnd}::date + '7 days'::interval)::date >= ${today}::date`,
       eq(members.status, "mora")
     ))
     .returning({ id: members.id });

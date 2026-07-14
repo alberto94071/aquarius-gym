@@ -7,7 +7,7 @@ import { gyms } from "@/db/schema";
 
 export default async function NewGroupPage() {
   const session = await auth();
-  const userRole = session?.user?.role || "secretaria_rb";
+  const userRole = session?.user?.role || "secretaria";
   
   let availableGyms: any[] = [];
   if (userRole === "admin") {

@@ -75,7 +75,7 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   loader: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: Colors.bg,
     alignItems: "center",
     justifyContent: "center",

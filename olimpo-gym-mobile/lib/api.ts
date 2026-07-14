@@ -17,13 +17,15 @@ export async function deleteToken(): Promise<void> {
 
 interface ApiOptions extends RequestInit {
   skipAuth?: boolean;
+  /** Milisegundos antes de abortar la petición (default 15s) */
+  timeoutMs?: number;
 }
 
 export async function apiFetch<T>(
   path: string,
   options: ApiOptions = {}
 ): Promise<T> {
-  const { skipAuth, ...fetchOptions } = options;
+  const { skipAuth, timeoutMs = 15000, ...fetchOptions } = options;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -37,13 +39,28 @@ export async function apiFetch<T>(
     }
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...fetchOptions,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError("La conexión tardó demasiado. Revisa tu internet.", 0);
+    }
+    throw new ApiError("Sin conexión. Revisa tu internet.", 0);
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    // Sesión expirada: el AuthContext detecta el 401 al verificar y manda a login
     throw new ApiError(errorData.error || "Error del servidor", res.status);
   }
 

@@ -11,6 +11,7 @@ import {
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { getYouTubeId } from "@/lib/youtube";
 import Svg, { Path, Circle, Rect, Defs, LinearGradient, Stop } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
@@ -73,11 +74,6 @@ function LightbulbIcon({ color = Colors.gold, size = 20 }: { color?: string; siz
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getYouTubeId(url: string): string | null {
-  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-
 function GoldDivider() {
   return (
     <View style={styles.divider}>
@@ -91,13 +87,22 @@ function GoldDivider() {
 // ─── Content Card ─────────────────────────────────────────────────────────────
 
 function ContentCard({ item }: { item: HomeContentItem }) {
+  const router = useRouter();
   const ytId = item.type === "video" && item.url ? getYouTubeId(item.url) : null;
   const thumbUrl = ytId
     ? `https://img.youtube.com/vi/${ytId}/mqdefault.jpg`
     : item.imageUrl ?? null;
 
   function handlePress() {
-    if (item.url) Linking.openURL(item.url);
+    if (ytId) {
+      // Video de YouTube: se reproduce DENTRO de la app
+      router.push({
+        pathname: "/video",
+        params: { videoId: ytId, title: item.title, body: item.body ?? "" },
+      });
+    } else if (item.url) {
+      Linking.openURL(item.url);
+    }
   }
 
   const TypeIcon =

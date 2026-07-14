@@ -2,8 +2,9 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Colors } from "@/constants/colors";
 import Svg, { Path, Circle, Rect } from "react-native-svg";
+import type { ColorValue } from "react-native";
 
-type IconProps = { color: string; size?: number };
+type IconProps = { color: ColorValue; size?: number };
 
 function HomeIcon({ color, size = 22 }: IconProps) {
   return (

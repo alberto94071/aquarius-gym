@@ -7,7 +7,7 @@ import { gyms } from "@/db/schema";
 
 export default async function NewMemberPage() {
   const session = await auth();
-  const userRole = session?.user?.role || "secretaria_rb";
+  const userRole = session?.user?.role || "secretaria";
   
   // Fetch gyms for the admin to select
   let availableGyms: any[] = [];
