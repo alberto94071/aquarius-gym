@@ -14,7 +14,9 @@ import {
 import { relations } from "drizzle-orm";
 
 // Enums
-export const roleEnum = pgEnum("role", ["admin", "secretaria_rb", "secretaria_sb", "coach"]);
+// "secretaria" es el rol genérico (la sede se determina por gymId);
+// secretaria_rb / secretaria_sb se conservan por compatibilidad con datos antiguos.
+export const roleEnum = pgEnum("role", ["admin", "secretaria", "secretaria_rb", "secretaria_sb", "coach"]);
 export const sexEnum = pgEnum("sex", ["M", "F"]);
 export const planEnum = pgEnum("plan", ["mensual", "trimestral", "anual"]);
 export const statusEnum = pgEnum("status", ["activo", "mora", "vencido", "bloqueado"]);

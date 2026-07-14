@@ -530,7 +530,7 @@ export default function RoutinesScreen() {
                           height={200}
                           play={true}
                           videoId={ytId}
-                          onChangeState={(state) => {
+                          onChangeState={(state: string) => {
                             if (state === "ended") setPlayingVideo(null);
                           }}
                         />
@@ -542,7 +542,7 @@ export default function RoutinesScreen() {
                         >
                           <Image
                             source={{ uri: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` }}
-                            style={StyleSheet.absoluteFillObject}
+                            style={StyleSheet.absoluteFill}
                             resizeMode="cover"
                           />
                           <View style={styles.playOverlay}>
@@ -906,7 +906,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   playOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.45)",
     alignItems: "center",
     justifyContent: "center",

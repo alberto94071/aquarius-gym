@@ -3,16 +3,24 @@ import { db } from "@/db";
 import { members, gyms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { signMobileJWT } from "@/lib/mobile-auth";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 
 async function getEmailFromIdToken(idToken: string): Promise<string | null> {
   try {
-    const res = await fetch(`${GOOGLE_TOKEN_INFO_URL}?id_token=${idToken}`);
+    const res = await fetch(`${GOOGLE_TOKEN_INFO_URL}?id_token=${encodeURIComponent(idToken)}`);
     if (!res.ok) return null;
     const data = await res.json();
     const clientId = process.env.GOOGLE_CLIENT_ID_MOBILE || process.env.GOOGLE_CLIENT_ID;
-    if (clientId && data.aud !== clientId) return null;
+    if (!clientId) {
+      // Sin client ID configurado no se puede validar a quién fue emitido el
+      // token: rechazar en producción en lugar de aceptar cualquier token.
+      if (process.env.NODE_ENV === "production") return null;
+    } else if (data.aud !== clientId) {
+      return null;
+    }
+    if (data.email_verified !== "true" && data.email_verified !== true) return null;
     return data.email || null;
   } catch {
     return null;
@@ -21,6 +29,14 @@ async function getEmailFromIdToken(idToken: string): Promise<string | null> {
 
 export async function POST(req: NextRequest) {
   try {
+    const limited = rateLimit(`auth-google:ip:${getClientIp(req)}`, 20, 15 * 60 * 1000);
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "Demasiados intentos. Intenta de nuevo más tarde." },
+        { status: 429, headers: { "Retry-After": String(limited.retryAfterSeconds), "Cache-Control": "no-store" } }
+      );
+    }
+
     const body = await req.json();
     const { idToken } = body;
 
@@ -62,20 +78,22 @@ export async function POST(req: NextRequest) {
       gymId: row.gymId,
     });
 
-    return NextResponse.json({
-      token,
-      member: {
-        id: row.id,
-        name: row.name,
-        code: row.code,
-        gym: { id: row.gymId, name: row.gymName },
-        status: row.status,
-        photoUrl: row.photoUrl,
+    return NextResponse.json(
+      {
+        token,
+        member: {
+          id: row.id,
+          name: row.name,
+          code: row.code,
+          gym: { id: row.gymId, name: row.gymName },
+          status: row.status,
+          photoUrl: row.photoUrl,
+        },
       },
-    });
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : "Error interno";
     console.error("[mobile/auth/google]", error);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
