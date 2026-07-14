@@ -6,7 +6,6 @@
 -- (cámbiala después de entrar al panel).
 -- ═══════════════════════════════════════════════════════════════════
 
-◇ injected env (2) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
 CREATE TYPE "public"."channel" AS ENUM('push', 'whatsapp', 'email');
 CREATE TYPE "public"."content_type" AS ENUM('video', 'article', 'tip', 'image', 'notice');
 CREATE TYPE "public"."muscle_group" AS ENUM('pecho', 'espalda', 'hombros', 'biceps', 'triceps', 'piernas', 'gluteos', 'core', 'cardio', 'full_body');
