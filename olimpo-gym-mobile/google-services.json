@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1051625879083",
+    "project_id": "aquarius-gym-3ba89",
+    "storage_bucket": "aquarius-gym-3ba89.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051625879083:android:59694681728bb45becdc6e",
+        "android_client_info": {
+          "package_name": "com.aquariusgym.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBw4wb69dFzECzl00UukYxWmDy8D6YEbuk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
