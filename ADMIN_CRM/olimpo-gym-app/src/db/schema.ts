@@ -17,6 +17,8 @@ import { relations } from "drizzle-orm";
 // "secretaria" es el rol genérico (la sede se determina por gymId);
 // secretaria_rb / secretaria_sb se conservan por compatibilidad con datos antiguos.
 export const roleEnum = pgEnum("role", ["admin", "secretaria", "secretaria_rb", "secretaria_sb", "coach"]);
+// Turno del personal: mañana o tarde
+export const shiftEnum = pgEnum("shift", ["am", "pm"]);
 export const sexEnum = pgEnum("sex", ["M", "F"]);
 export const planEnum = pgEnum("plan", ["mensual", "trimestral", "anual"]);
 export const statusEnum = pgEnum("status", ["activo", "mora", "vencido", "bloqueado"]);
@@ -58,6 +60,7 @@ export const systemUsers = pgTable("system_users", {
   email: varchar("email", { length: 255 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   role: roleEnum("role").notNull(),
+  shift: shiftEnum("shift"), // turno de secretarias (am/pm); null para admin
   password: varchar("password", { length: 255 }), // Nullable because Google users might not have one
   gymId: uuid("gym_id").references(() => gyms.id),
   avatarUrl: varchar("avatar_url", { length: 1024 }),
@@ -278,7 +281,7 @@ export const workoutSetLogs = pgTable("workout_set_logs", {
   completed: boolean("completed").default(false).notNull(),
 });
 
-// Body measurements logged by member
+// Body measurements logged by member (siempre almacenadas en cm; la app convierte de pulgadas)
 export const bodyMeasurements = pgTable("body_measurements", {
   id: uuid("id").defaultRandom().primaryKey(),
   memberId: uuid("member_id").references(() => members.id).notNull(),
@@ -288,9 +291,83 @@ export const bodyMeasurements = pgTable("body_measurements", {
   chestCm: decimal("chest_cm", { precision: 5, scale: 2 }),
   hipsCm: decimal("hips_cm", { precision: 5, scale: 2 }),
   armCm: decimal("arm_cm", { precision: 5, scale: 2 }),
-  notes: text("notes"),
+  wristCm: decimal("wrist_cm", { precision: 5, scale: 2 }),
+  calfCm: decimal("calf_cm", { precision: 5, scale: 2 }),
+  neckCm: decimal("neck_cm", { precision: 5, scale: 2 }),
+  backCm: decimal("back_cm", { precision: 5, scale: 2 }),
+  notes: text("notes"), // "Objetivo personal" del miembro
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ─── Ventas / Inventario ─────────────────────────────────────────────────────
+
+export const saleStatusEnum = pgEnum("sale_status", ["pagada", "credito", "apartado", "cancelada"]);
+export const closureStatusEnum = pgEnum("closure_status", ["abierto", "cerrado", "perdido"]);
+
+// Productos del inventario (aguas, gatorades, proteína, suplementos...)
+export const products = pgTable("products", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }),
+  costPrice: decimal("cost_price", { precision: 10, scale: 2 }).notNull(), // a cuánto se compró
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }).notNull(), // a cuánto se vende
+  stock: integer("stock").default(0).notNull(),
+  imageUrl: varchar("image_url", { length: 1024 }),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Ventas (contado, crédito a miembro, o apartado desde la app)
+export const sales = pgTable("sales", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+  productId: uuid("product_id").references(() => products.id).notNull(),
+  memberId: uuid("member_id").references(() => members.id), // null = cliente de mostrador
+  quantity: integer("quantity").default(1).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  amountPaid: decimal("amount_paid", { precision: 10, scale: 2 }).default("0").notNull(),
+  status: saleStatusEnum("status").default("pagada").notNull(),
+  shift: shiftEnum("shift"), // turno en que se registró (para el cuadre)
+  soldBy: uuid("sold_by").references(() => systemUsers.id), // null = pedido desde la app
+  saleDate: timestamp("sale_date").defaultNow().notNull(),
+  notes: text("notes"),
+});
+
+// Abonos a una venta (pagos parciales)
+export const salePayments = pgTable("sale_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  saleId: uuid("sale_id").references(() => sales.id, { onDelete: "cascade" }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").defaultNow().notNull(),
+  registeredBy: uuid("registered_by").references(() => systemUsers.id),
+  notes: text("notes"),
+});
+
+// Cuadre/cierre de turno de las secretarias
+export const shiftClosures = pgTable(
+  "shift_closures",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+    userId: uuid("user_id").references(() => systemUsers.id).notNull(),
+    shift: shiftEnum("shift").notNull(),
+    closureDate: date("closure_date").notNull(),
+    openingConfirmedAt: timestamp("opening_confirmed_at"), // confirmó inventario al llegar
+    closedAt: timestamp("closed_at"),
+    status: closureStatusEnum("status").default("abierto").notNull(),
+    salesTotal: decimal("sales_total", { precision: 10, scale: 2 }).default("0").notNull(),
+    countedCash: decimal("counted_cash", { precision: 10, scale: 2 }), // efectivo contado al cierre
+    stockOk: boolean("stock_ok"), // el inventario físico cuadró
+    discrepancies: text("discrepancies"), // detalle de faltantes (los repone la secretaria)
+    notes: text("notes"),
+  },
+  (t) => ({
+    unq: unique().on(t.gymId, t.userId, t.closureDate, t.shift),
+  })
+);
 
 // Home screen content (videos, articles, tips, images)
 export const homeContent = pgTable("home_content", {

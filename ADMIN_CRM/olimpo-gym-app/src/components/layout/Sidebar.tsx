@@ -19,6 +19,7 @@ import {
   CircleDollarSign,
   ShieldCheck,
   BarChart2,
+  ShoppingCart,
 } from "lucide-react";
 
 const MENU_ITEMS = [
@@ -26,6 +27,7 @@ const MENU_ITEMS = [
   { name: "Miembros", href: "/members", icon: Users },
   { name: "Grupos", href: "/groups", icon: UserPlus },
   { name: "Pagos", href: "/payments", icon: CreditCard },
+  { name: "Ventas", href: "/ventas", icon: ShoppingCart },
   { name: "Anuncios", href: "/announcements", icon: Megaphone },
 ];
 

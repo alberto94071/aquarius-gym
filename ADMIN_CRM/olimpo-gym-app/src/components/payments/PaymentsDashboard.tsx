@@ -324,6 +324,20 @@ export function PaymentsDashboard({ userRole, gyms }: { userRole: string; gyms: 
                   </div>
                 )}
 
+                {/* Deuda de tienda: se suma a la mensualidad */}
+                {Number(memberPaymentInfo.storeDebt ?? 0) > 0 && (
+                  <div className="px-4 py-3 bg-orange-500/10 border-y border-orange-500/30">
+                    <p className="text-sm font-bold text-orange-300">
+                      🛒 Deuda de tienda: Q{Number(memberPaymentInfo.storeDebt).toFixed(2)} — se suma a esta mensualidad
+                    </p>
+                    <ul className="text-xs text-orange-200/80 mt-1 space-y-0.5">
+                      {(memberPaymentInfo.storeDebtItems ?? []).map((i: any) => (
+                        <li key={i.id}>{i.quantity}× {i.productName} — saldo Q{i.saldo} (regístralo como abono en Ventas)</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 divide-x divide-olimpo-surface-light bg-olimpo-bg/50">
                   <div className="px-4 py-3">
                     <p className="text-xs text-olimpo-text-muted uppercase tracking-wider mb-1">Pagado hasta</p>

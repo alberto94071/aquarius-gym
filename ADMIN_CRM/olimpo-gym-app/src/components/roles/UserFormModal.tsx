@@ -11,6 +11,7 @@ export function UserFormModal({ gyms, onClose }: { gyms: any[], onClose: () => v
   const [error, setError] = useState("");
 
   const [roleSelection, setRoleSelection] = useState("admin");
+  const [shift, setShift] = useState<"am" | "pm">("am");
   const [gymId, setGymId] = useState(gyms[0]?.id || "");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,7 +28,8 @@ export function UserFormModal({ gyms, onClose }: { gyms: any[], onClose: () => v
         email,
         name,
         role: dbRole,
-        gymId: roleSelection === "admin" ? undefined : gymId
+        gymId: roleSelection === "admin" ? undefined : gymId,
+        shift: roleSelection === "secretaria" ? shift : undefined,
       });
 
       if (res.success) {
@@ -77,14 +79,23 @@ export function UserFormModal({ gyms, onClose }: { gyms: any[], onClose: () => v
           </div>
 
           {roleSelection === "secretaria" && (
-            <div>
-              <label className="block text-sm text-olimpo-text-muted mb-1">Sede Asignada</label>
-              <select value={gymId} onChange={e => setGymId(e.target.value)} className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2 text-olimpo-text focus:border-olimpo-gold focus:outline-none">
-                {gyms.map(g => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm text-olimpo-text-muted mb-1">Sede Asignada</label>
+                <select value={gymId} onChange={e => setGymId(e.target.value)} className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2 text-olimpo-text focus:border-olimpo-gold focus:outline-none">
+                  {gyms.map(g => (
+                    <option key={g.id} value={g.id}>{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-olimpo-text-muted mb-1">Turno</label>
+                <select value={shift} onChange={e => setShift(e.target.value as "am" | "pm")} className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2 text-olimpo-text focus:border-olimpo-gold focus:outline-none">
+                  <option value="am">Mañana (6:00 – 13:00)</option>
+                  <option value="pm">Tarde (13:00 – 21:00)</option>
+                </select>
+              </div>
+            </>
           )}
 
           <div className="pt-4 flex justify-end gap-3">

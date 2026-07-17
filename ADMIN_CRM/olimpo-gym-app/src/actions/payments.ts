@@ -293,6 +293,10 @@ export async function getMemberPaymentInfo(memberId: string) {
   // Charge enrollment fee if member has been away >270 days (~9 months)
   const chargeEnrollment = daysOverdue > 270;
 
+  // Deuda de tienda (crédito/apartado): se suma a la siguiente mensualidad
+  const { getMemberStoreDebt } = await import("@/actions/ventas");
+  const storeDebt = await getMemberStoreDebt(memberId);
+
   return {
     membershipEnd: row.member.membershipEnd,
     nextMonthToPay,
@@ -300,5 +304,12 @@ export async function getMemberPaymentInfo(memberId: string) {
     chargeEnrollment,
     enrollmentFee: row.enrollmentFee,
     recentPayments,
+    storeDebt: storeDebt.totalDebt,
+    storeDebtItems: storeDebt.items.map((i) => ({
+      id: i.id,
+      productName: i.productName,
+      quantity: i.quantity,
+      saldo: (Number(i.total) - Number(i.amountPaid)).toFixed(2),
+    })),
   };
 }

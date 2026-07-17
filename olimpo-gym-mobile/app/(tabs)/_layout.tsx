@@ -1,5 +1,6 @@
 import React from "react";
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import Svg, { Path, Circle, Rect } from "react-native-svg";
 import type { ColorValue } from "react-native";
@@ -41,6 +42,16 @@ function UserIcon({ color, size = 22 }: IconProps) {
   );
 }
 
+function CartIcon({ color, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx="9" cy="21" r="1" />
+      <Circle cx="20" cy="21" r="1" />
+      <Path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </Svg>
+  );
+}
+
 function DumbbellIcon({ color, size = 22 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -52,6 +63,10 @@ function DumbbellIcon({ color, size = 22 }: IconProps) {
 }
 
 export default function TabsLayout() {
+  // Barra de navegación del sistema (Samsung y otros): la tab bar se levanta
+  // para quedar siempre dentro del área visible de la pantalla
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -60,8 +75,8 @@ export default function TabsLayout() {
           backgroundColor: Colors.card,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 64,
-          paddingBottom: 10,
+          height: 58 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 6,
         },
         tabBarActiveTintColor: Colors.gold,
@@ -92,6 +107,13 @@ export default function TabsLayout() {
         options={{
           title: "Rutinas",
           tabBarIcon: ({ color }) => <DumbbellIcon color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="store"
+        options={{
+          title: "Tienda",
+          tabBarIcon: ({ color }) => <CartIcon color={color} />,
         }}
       />
       <Tabs.Screen

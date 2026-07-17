@@ -24,7 +24,21 @@ interface Measurement {
   chestCm: string | null;
   hipsCm: string | null;
   armCm: string | null;
+  wristCm: string | null;
+  calfCm: string | null;
+  neckCm: string | null;
+  backCm: string | null;
   notes: string | null;
+}
+
+type Unit = "cm" | "in";
+const IN_TO_CM = 2.54;
+
+/** Convierte el valor ingresado a cm (la BD siempre guarda cm) */
+function toCm(value: string, unit: Unit): number | null {
+  const n = parseFloat(value);
+  if (!n) return null;
+  return unit === "in" ? Math.round(n * IN_TO_CM * 100) / 100 : n;
 }
 
 // ─── Mini Line Chart ──────────────────────────────────────────────────────────
@@ -97,40 +111,49 @@ function LogFormModal({
 }) {
   const today = new Date().toISOString().split("T")[0];
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
+  const [unit, setUnit] = useState<Unit>("cm");
+  const EMPTY = {
     logDate: today,
     weightKg: "",
     waistCm: "",
     chestCm: "",
     hipsCm: "",
     armCm: "",
+    wristCm: "",
+    calfCm: "",
+    neckCm: "",
+    backCm: "",
     notes: "",
-  });
+  };
+  const [form, setForm] = useState(EMPTY);
 
   function set(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  const bodyFields = ["waistCm", "chestCm", "hipsCm", "armCm", "wristCm", "calfCm", "neckCm", "backCm"] as const;
+
   async function handleSave() {
-    if (!form.weightKg && !form.waistCm && !form.chestCm && !form.hipsCm && !form.armCm) {
+    const hasAny = form.weightKg || bodyFields.some((f) => form[f]);
+    if (!hasAny) {
       Alert.alert("Ingresa al menos una medida");
       return;
     }
     setSaving(true);
     try {
+      const payload: Record<string, unknown> = {
+        logDate: form.logDate,
+        weightKg: form.weightKg ? parseFloat(form.weightKg) : null,
+        notes: form.notes || null, // objetivo personal
+      };
+      // Las medidas corporales se convierten a cm si se ingresaron en pulgadas
+      for (const f of bodyFields) payload[f] = form[f] ? toCm(form[f], unit) : null;
+
       await apiFetch("/api/mobile/measurements", {
         method: "POST",
-        body: JSON.stringify({
-          logDate: form.logDate,
-          weightKg: form.weightKg ? parseFloat(form.weightKg) : null,
-          waistCm: form.waistCm ? parseFloat(form.waistCm) : null,
-          chestCm: form.chestCm ? parseFloat(form.chestCm) : null,
-          hipsCm: form.hipsCm ? parseFloat(form.hipsCm) : null,
-          armCm: form.armCm ? parseFloat(form.armCm) : null,
-          notes: form.notes || null,
-        }),
+        body: JSON.stringify(payload),
       });
-      setForm({ logDate: today, weightKg: "", waistCm: "", chestCm: "", hipsCm: "", armCm: "", notes: "" });
+      setForm(EMPTY);
       onSaved();
       onClose();
     } catch (err) {
@@ -154,62 +177,48 @@ function LogFormModal({
         <ScrollView contentContainerStyle={formStyles.content}>
           <Text style={formStyles.hint}>Completa solo los campos disponibles. Todos son opcionales excepto la fecha.</Text>
 
+          {/* Selector de unidad para medidas corporales */}
+          <View style={formStyles.unitRow}>
+            <Text style={formStyles.fieldLabel}>Unidad de medida</Text>
+            <View style={formStyles.unitToggle}>
+              {(["cm", "in"] as Unit[]).map((u) => (
+                <TouchableOpacity
+                  key={u}
+                  onPress={() => setUnit(u)}
+                  style={[formStyles.unitBtn, unit === u && formStyles.unitBtnActive]}
+                >
+                  <Text style={[formStyles.unitBtnText, unit === u && formStyles.unitBtnTextActive]}>
+                    {u === "cm" ? "Centímetros" : "Pulgadas"}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           <View style={formStyles.grid}>
-            <View style={formStyles.field}>
-              <Text style={formStyles.fieldLabel}>Peso (kg)</Text>
-              <TextInput
-                style={formStyles.input}
-                value={form.weightKg}
-                onChangeText={(v) => set("weightKg", v)}
-                placeholder="ej. 72.5"
-                placeholderTextColor={Colors.dim}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={formStyles.field}>
-              <Text style={formStyles.fieldLabel}>Cintura (cm)</Text>
-              <TextInput
-                style={formStyles.input}
-                value={form.waistCm}
-                onChangeText={(v) => set("waistCm", v)}
-                placeholder="ej. 82"
-                placeholderTextColor={Colors.dim}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={formStyles.field}>
-              <Text style={formStyles.fieldLabel}>Pecho (cm)</Text>
-              <TextInput
-                style={formStyles.input}
-                value={form.chestCm}
-                onChangeText={(v) => set("chestCm", v)}
-                placeholder="ej. 96"
-                placeholderTextColor={Colors.dim}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={formStyles.field}>
-              <Text style={formStyles.fieldLabel}>Cadera (cm)</Text>
-              <TextInput
-                style={formStyles.input}
-                value={form.hipsCm}
-                onChangeText={(v) => set("hipsCm", v)}
-                placeholder="ej. 90"
-                placeholderTextColor={Colors.dim}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={formStyles.field}>
-              <Text style={formStyles.fieldLabel}>Brazo (cm)</Text>
-              <TextInput
-                style={formStyles.input}
-                value={form.armCm}
-                onChangeText={(v) => set("armCm", v)}
-                placeholder="ej. 36"
-                placeholderTextColor={Colors.dim}
-                keyboardType="decimal-pad"
-              />
-            </View>
+            {([
+              ["weightKg", "Peso (kg)", "ej. 72.5"],
+              ["waistCm", `Cintura (${unit})`, "ej. 82"],
+              ["chestCm", `Pecho (${unit})`, "ej. 96"],
+              ["hipsCm", `Cadera (${unit})`, "ej. 90"],
+              ["armCm", `Brazo (${unit})`, "ej. 36"],
+              ["wristCm", `Muñeca (${unit})`, "ej. 17"],
+              ["calfCm", `Pantorrilla (${unit})`, "ej. 38"],
+              ["neckCm", `Cuello (${unit})`, "ej. 39"],
+              ["backCm", `Espalda (${unit})`, "ej. 110"],
+            ] as const).map(([field, label, ph]) => (
+              <View key={field} style={formStyles.field}>
+                <Text style={formStyles.fieldLabel}>{label}</Text>
+                <TextInput
+                  style={formStyles.input}
+                  value={form[field]}
+                  onChangeText={(v) => set(field, v)}
+                  placeholder={ph}
+                  placeholderTextColor={Colors.dim}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            ))}
             <View style={formStyles.field}>
               <Text style={formStyles.fieldLabel}>Fecha</Text>
               <TextInput
@@ -223,12 +232,12 @@ function LogFormModal({
           </View>
 
           <View style={formStyles.fieldFull}>
-            <Text style={formStyles.fieldLabel}>Notas (opcional)</Text>
+            <Text style={formStyles.fieldLabel}>🎯 Objetivo personal</Text>
             <TextInput
               style={[formStyles.input, formStyles.inputMulti]}
               value={form.notes}
               onChangeText={(v) => set("notes", v)}
-              placeholder="Cómo te sentiste, contexto..."
+              placeholder="Tu recordatorio de por qué vas al gym: bajar 5 kg, marcar brazos, salud..."
               placeholderTextColor={Colors.dim}
               multiline
               numberOfLines={3}
@@ -287,6 +296,20 @@ const formStyles = StyleSheet.create({
     fontSize: 14,
   },
   inputMulti: { height: 80, textAlignVertical: "top" },
+  unitRow: { gap: 6 },
+  unitToggle: {
+    flexDirection: "row",
+    backgroundColor: Colors.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 4,
+    gap: 4,
+  },
+  unitBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
+  unitBtnActive: { backgroundColor: Colors.gold },
+  unitBtnText: { color: Colors.dim, fontSize: 13, fontWeight: "700" },
+  unitBtnTextActive: { color: "#000" },
   saveBtn: {
     backgroundColor: Colors.gold,
     borderRadius: 12,
@@ -327,11 +350,20 @@ export default function MeasurementsScreen() {
 
   // Extract number arrays for charts (reversed = oldest first)
   const reversed = [...measurements].reverse();
-  const weights = reversed.map((m) => parseFloat(m.weightKg ?? "0")).filter((v) => v > 0);
-  const waists = reversed.map((m) => parseFloat(m.waistCm ?? "0")).filter((v) => v > 0);
-  const chests = reversed.map((m) => parseFloat(m.chestCm ?? "0")).filter((v) => v > 0);
-  const hips = reversed.map((m) => parseFloat(m.hipsCm ?? "0")).filter((v) => v > 0);
-  const arms = reversed.map((m) => parseFloat(m.armCm ?? "0")).filter((v) => v > 0);
+  const series = (field: keyof Measurement) =>
+    reversed.map((m) => parseFloat((m[field] as string | null) ?? "0")).filter((v) => v > 0);
+
+  const CHARTS: { label: string; values: number[]; color: string }[] = [
+    { label: "Peso (kg)", values: series("weightKg"), color: Colors.gold },
+    { label: "Cintura (cm)", values: series("waistCm"), color: "#60a5fa" },
+    { label: "Pecho (cm)", values: series("chestCm"), color: "#a78bfa" },
+    { label: "Cadera (cm)", values: series("hipsCm"), color: "#f472b6" },
+    { label: "Brazo (cm)", values: series("armCm"), color: Colors.green },
+    { label: "Muñeca (cm)", values: series("wristCm"), color: "#fbbf24" },
+    { label: "Pantorrilla (cm)", values: series("calfCm"), color: "#34d399" },
+    { label: "Cuello (cm)", values: series("neckCm"), color: "#f87171" },
+    { label: "Espalda (cm)", values: series("backCm"), color: "#38bdf8" },
+  ];
 
   const latest = measurements[0];
   const prev = measurements[1];
@@ -371,6 +403,10 @@ export default function MeasurementsScreen() {
                     { label: "Pecho", value: latest.chestCm, unit: "cm", d: prev ? delta(latest.chestCm, prev.chestCm) : null },
                     { label: "Cadera", value: latest.hipsCm, unit: "cm", d: prev ? delta(latest.hipsCm, prev.hipsCm) : null },
                     { label: "Brazo", value: latest.armCm, unit: "cm", d: prev ? delta(latest.armCm, prev.armCm) : null },
+                    { label: "Muñeca", value: latest.wristCm, unit: "cm", d: prev ? delta(latest.wristCm, prev.wristCm) : null },
+                    { label: "Pantorrilla", value: latest.calfCm, unit: "cm", d: prev ? delta(latest.calfCm, prev.calfCm) : null },
+                    { label: "Cuello", value: latest.neckCm, unit: "cm", d: prev ? delta(latest.neckCm, prev.neckCm) : null },
+                    { label: "Espalda", value: latest.backCm, unit: "cm", d: prev ? delta(latest.backCm, prev.backCm) : null },
                   ].filter((s) => s.value).map((s) => (
                     <View key={s.label} style={styles.snapshotStat}>
                       <Text style={styles.snapshotValue}>{parseFloat(s.value!).toFixed(1)}</Text>
@@ -392,15 +428,14 @@ export default function MeasurementsScreen() {
               </View>
             )}
 
-            {/* Charts */}
+            {/* Charts: solo las medidas que tienen al menos 2 registros */}
             {measurements.length >= 2 && (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>EVOLUCIÓN EN EL TIEMPO</Text>
                 <View style={styles.chartsGrid}>
-                  <MiniChart values={weights} label="Peso (kg)" color={Colors.gold} />
-                  <MiniChart values={waists} label="Cintura (cm)" color="#60a5fa" />
-                  <MiniChart values={chests} label="Pecho (cm)" color="#a78bfa" />
-                  <MiniChart values={arms} label="Brazo (cm)" color={Colors.green} />
+                  {CHARTS.filter((c) => c.values.length >= 2).map((c) => (
+                    <MiniChart key={c.label} values={c.values} label={c.label} color={c.color} />
+                  ))}
                 </View>
               </View>
             )}
@@ -418,8 +453,12 @@ export default function MeasurementsScreen() {
                       {m.chestCm && <View style={styles.chip}><Text style={styles.chipText}>Pec {parseFloat(m.chestCm).toFixed(0)} cm</Text></View>}
                       {m.hipsCm && <View style={styles.chip}><Text style={styles.chipText}>Cad {parseFloat(m.hipsCm).toFixed(0)} cm</Text></View>}
                       {m.armCm && <View style={styles.chip}><Text style={styles.chipText}>Bra {parseFloat(m.armCm).toFixed(0)} cm</Text></View>}
+                      {m.wristCm && <View style={styles.chip}><Text style={styles.chipText}>Muñ {parseFloat(m.wristCm).toFixed(0)} cm</Text></View>}
+                      {m.calfCm && <View style={styles.chip}><Text style={styles.chipText}>Pan {parseFloat(m.calfCm).toFixed(0)} cm</Text></View>}
+                      {m.neckCm && <View style={styles.chip}><Text style={styles.chipText}>Cue {parseFloat(m.neckCm).toFixed(0)} cm</Text></View>}
+                      {m.backCm && <View style={styles.chip}><Text style={styles.chipText}>Esp {parseFloat(m.backCm).toFixed(0)} cm</Text></View>}
                     </View>
-                    {m.notes && <Text style={styles.historyNotes}>{m.notes}</Text>}
+                    {m.notes && <Text style={styles.historyNotes}>🎯 {m.notes}</Text>}
                   </View>
                 ))}
               </View>

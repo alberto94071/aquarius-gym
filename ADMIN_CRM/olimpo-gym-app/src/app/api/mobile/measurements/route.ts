@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     if (!auth) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
     const body = await req.json();
-    const { logDate, weightKg, waistCm, chestCm, hipsCm, armCm, notes } = body;
+    const { logDate, weightKg, waistCm, chestCm, hipsCm, armCm, wristCm, calfCm, neckCm, backCm, notes } = body;
 
     if (!logDate) {
       return NextResponse.json({ error: "logDate requerido" }, { status: 400 });
@@ -50,7 +50,11 @@ export async function POST(req: NextRequest) {
         chestCm: chestCm ? String(chestCm) : null,
         hipsCm: hipsCm ? String(hipsCm) : null,
         armCm: armCm ? String(armCm) : null,
-        notes: notes || null,
+        wristCm: wristCm ? String(wristCm) : null,
+        calfCm: calfCm ? String(calfCm) : null,
+        neckCm: neckCm ? String(neckCm) : null,
+        backCm: backCm ? String(backCm) : null,
+        notes: notes || null, // objetivo personal del miembro
       })
       .returning();
 

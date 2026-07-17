@@ -24,7 +24,7 @@ export async function getSystemUsers() {
   return users;
 }
 
-export async function createSystemUser(data: { email: string; name: string; role: any; gymId?: string }) {
+export async function createSystemUser(data: { email: string; name: string; role: any; gymId?: string; shift?: "am" | "pm" }) {
   const session = await auth();
   if (!session?.user) throw new Error("No autorizado");
 
@@ -36,6 +36,7 @@ export async function createSystemUser(data: { email: string; name: string; role
     name: data.name,
     role: data.role,
     gymId: data.gymId || null,
+    shift: data.shift || null,
     active: true,
   });
 
