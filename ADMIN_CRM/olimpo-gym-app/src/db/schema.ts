@@ -48,6 +48,12 @@ export const gyms = pgTable("gyms", {
   pricingGroupDefault: decimal("pricing_group_default", { precision: 10, scale: 2 }).notNull(),
   enrollmentFee: decimal("enrollment_fee", { precision: 10, scale: 2 }).default("0").notNull(),
   cardFee: decimal("card_fee", { precision: 10, scale: 2 }).default("0").notNull(),
+  pricingDayPass: decimal("pricing_day_pass", { precision: 10, scale: 2 }).default("15").notNull(), // pago por día
+  // Horarios de turnos de ESTA sede (hora 0-23, configurables por el admin)
+  shiftAmStart: integer("shift_am_start").default(6).notNull(),
+  shiftAmEnd: integer("shift_am_end").default(13).notNull(),
+  shiftPmStart: integer("shift_pm_start").default(13).notNull(),
+  shiftPmEnd: integer("shift_pm_end").default(21).notNull(),
   nextMemberSeq: integer("next_member_seq").default(1).notNull(),
   nextGroupSeq: integer("next_group_seq").default(1).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -115,6 +121,7 @@ export const members = pgTable("members", {
   emergencyContactName: varchar("emergency_contact_name", { length: 255 }),
   emergencyContactPhone: varchar("emergency_contact_phone", { length: 50 }),
   emergencyContactRelation: varchar("emergency_contact_relation", { length: 100 }),
+  fingerprintTemplate: text("fingerprint_template"), // template del lector HID (base64), capturado al inscribir
   registeredBy: uuid("registered_by").references(() => systemUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -344,6 +351,27 @@ export const salePayments = pgTable("sale_payments", {
   paymentDate: timestamp("payment_date").defaultNow().notNull(),
   registeredBy: uuid("registered_by").references(() => systemUsers.id),
   notes: text("notes"),
+});
+
+// Pagos por día (usuarios sin membresía que pagan solo un día de gimnasio)
+export const dayPasses = pgTable("day_passes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+  personName: varchar("person_name", { length: 255 }),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  shift: shiftEnum("shift"),
+  soldBy: uuid("sold_by").references(() => systemUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Asistencias (check-in por huella con lector HID, o manual)
+export const attendanceSourceEnum = pgEnum("attendance_source", ["huella", "manual"]);
+export const attendances = pgTable("attendances", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  memberId: uuid("member_id").references(() => members.id).notNull(),
+  gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+  checkinAt: timestamp("checkin_at").defaultNow().notNull(),
+  source: attendanceSourceEnum("source").default("huella").notNull(),
 });
 
 // Cuadre/cierre de turno de las secretarias

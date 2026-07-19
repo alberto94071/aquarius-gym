@@ -1,11 +1,21 @@
 "use server";
 
 import { db } from "@/db";
-import { products, sales, salePayments, shiftClosures, systemUsers, members } from "@/db/schema";
+import { products, sales, salePayments, shiftClosures, systemUsers, members, gyms, dayPasses, attendances, payments } from "@/db/schema";
 import { eq, and, desc, gte, lt, sql, inArray } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { SHIFT_TIMES, CLOSURE_WARNING_MINUTES, todayInGuatemala, minutesToShiftEnd, type Shift } from "@/lib/shifts";
+import {
+  CLOSURE_WARNING_MINUTES, DEFAULT_SHIFT_HOURS, todayInGuatemala, minutesToShiftEnd,
+  shiftEndHour, gymHours, nowInGuatemala, type Shift, type GymShiftHours,
+} from "@/lib/shifts";
+import { sendClosureEmail } from "@/lib/email";
+
+async function getHoursForGym(gymId: string | null): Promise<GymShiftHours> {
+  if (!gymId) return DEFAULT_SHIFT_HOURS;
+  const [gym] = await db.select().from(gyms).where(eq(gyms.id, gymId));
+  return gym ? gymHours(gym) : DEFAULT_SHIFT_HOURS;
+}
 
 async function getCurrentUser() {
   const session = await auth();
@@ -74,8 +84,8 @@ export async function updateProduct(
 
 // ─── Ventas ──────────────────────────────────────────────────────────────────
 
-function currentShiftByTime(): Shift {
-  return minutesToShiftEnd("am") > 0 ? "am" : "pm";
+function currentShiftByTime(hours: GymShiftHours): Shift {
+  return minutesToShiftEnd("am", hours) > 0 ? "am" : "pm";
 }
 
 export async function registerSale(data: {
@@ -99,7 +109,7 @@ export async function registerSale(data: {
   if (data.status !== "pagada" && !data.memberId) throw new Error("Las ventas a crédito/apartado requieren un miembro");
   if (data.status === "pagada" && paid < Number(total)) throw new Error("Una venta pagada debe cubrir el total");
 
-  const shift: Shift = user.shift ?? currentShiftByTime();
+  const shift: Shift = user.shift ?? currentShiftByTime(await getHoursForGym(product.gymId));
 
   await db.transaction(async (tx) => {
     const [sale] = await tx.insert(sales).values({
@@ -257,6 +267,46 @@ export async function getSalesSummary(gymFilter?: string) {
   };
 }
 
+// ─── Pago por día ────────────────────────────────────────────────────────────
+
+/** Cobra un día de gimnasio a un visitante sin membresía (precio de la sede) */
+export async function registerDayPass(data: { personName?: string; gymId?: string }) {
+  const user = await getCurrentUser();
+  const gymId = isAdmin(user) ? (data.gymId ?? user.gymId) : user.gymId;
+  if (!gymId) throw new Error("Selecciona una sede");
+
+  const [gym] = await db.select().from(gyms).where(eq(gyms.id, gymId));
+  if (!gym) throw new Error("Sede no encontrada");
+
+  const shift: Shift = user.shift ?? currentShiftByTime(gymHours(gym));
+
+  await db.insert(dayPasses).values({
+    gymId,
+    personName: data.personName || null,
+    amount: gym.pricingDayPass,
+    shift,
+    soldBy: user.id,
+  });
+
+  revalidatePath("/ventas");
+  return { success: true, amount: gym.pricingDayPass };
+}
+
+/** Pagos por día de hoy (secretaria: solo su turno; admin: todos) */
+export async function listTodayDayPasses(gymFilter?: string) {
+  const user = await getCurrentUser();
+  const { start, end } = todayUtcRange();
+  const conditions = [gte(dayPasses.createdAt, start), lt(dayPasses.createdAt, end)];
+  if (isAdmin(user)) {
+    if (gymFilter) conditions.push(eq(dayPasses.gymId, gymFilter));
+  } else {
+    conditions.push(eq(dayPasses.gymId, user.gymId!));
+    if (user.shift) conditions.push(eq(dayPasses.shift, user.shift));
+  }
+  const rows = await db.select().from(dayPasses).where(and(...conditions)).orderBy(desc(dayPasses.createdAt));
+  return { items: rows, total: rows.reduce((s, r) => s + Number(r.amount), 0) };
+}
+
 // ─── Cuadre de turno ─────────────────────────────────────────────────────────
 
 /**
@@ -267,6 +317,7 @@ export async function getMyShiftStatus() {
   const user = await getCurrentUser();
   if (isAdmin(user) || !user.gymId || !user.shift) return null;
 
+  const hours = await getHoursForGym(user.gymId);
   const today = todayInGuatemala();
   let [closure] = await db.select().from(shiftClosures).where(and(
     eq(shiftClosures.gymId, user.gymId),
@@ -292,7 +343,7 @@ export async function getMyShiftStatus() {
     }
   }
 
-  const minutesLeft = minutesToShiftEnd(user.shift);
+  const minutesLeft = minutesToShiftEnd(user.shift, hours);
 
   // Si el turno ya terminó y no cerró → marcar como perdido
   if (closure.status === "abierto" && minutesLeft < 0) {
@@ -311,7 +362,7 @@ export async function getMyShiftStatus() {
     closure,
     inventory,
     shift: user.shift,
-    shiftEnd: SHIFT_TIMES[user.shift].end,
+    shiftEnd: shiftEndHour(user.shift, hours),
     minutesLeft,
     shouldWarn: closure.status === "abierto" && minutesLeft <= CLOSURE_WARNING_MINUTES && minutesLeft > 0,
   };
@@ -381,6 +432,68 @@ export async function submitShiftClosure(data: {
       notes: data.notes || null,
     })
     .where(eq(shiftClosures.id, status.closure.id));
+
+  // ── Correo al dueño con el resumen completo del día/turno ──
+  try {
+    const today = todayInGuatemala();
+    const [gym] = await db.select().from(gyms).where(eq(gyms.id, user.gymId));
+
+    const [attendanceRow] = await db
+      .select({ n: sql<number>`COUNT(*)::int` })
+      .from(attendances)
+      .where(and(eq(attendances.gymId, user.gymId), gte(attendances.checkinAt, start), lt(attendances.checkinAt, end)));
+
+    // Mensualidades registradas HOY por esta secretaria
+    const membershipPayments = await db
+      .select({ memberName: members.name, amount: payments.amount })
+      .from(payments)
+      .innerJoin(members, eq(payments.memberId, members.id))
+      .where(and(
+        eq(payments.gymId, user.gymId),
+        eq(payments.registeredBy, user.id),
+        eq(payments.paymentDate, today)
+      ));
+
+    const productSales = await db
+      .select({ productName: products.name, quantity: sales.quantity, total: sales.total, status: sales.status })
+      .from(sales)
+      .innerJoin(products, eq(sales.productId, products.id))
+      .where(and(
+        eq(sales.gymId, user.gymId),
+        eq(sales.shift, user.shift),
+        gte(sales.saleDate, start),
+        lt(sales.saleDate, end),
+        inArray(sales.status, ["pagada", "credito", "apartado"])
+      ));
+
+    const dp = await db
+      .select({ amount: dayPasses.amount })
+      .from(dayPasses)
+      .where(and(
+        eq(dayPasses.gymId, user.gymId),
+        eq(dayPasses.shift, user.shift),
+        gte(dayPasses.createdAt, start),
+        lt(dayPasses.createdAt, end)
+      ));
+
+    await sendClosureEmail({
+      gymName: gym?.name ?? "Aquarius Gym",
+      shift: user.shift,
+      date: today,
+      secretaryName: user.name,
+      attendanceCount: attendanceRow?.n ?? 0,
+      membershipPayments: membershipPayments.map((p) => ({ memberName: p.memberName, amount: p.amount })),
+      productSales,
+      dayPasses: { count: dp.length, total: dp.reduce((s, r) => s + Number(r.amount), 0) },
+      salesTotal: tot?.cobrado ?? "0",
+      countedCash: data.countedCash,
+      stockOk: data.stockOk,
+      discrepancies: data.discrepancies,
+      notes: data.notes,
+    });
+  } catch (e) {
+    console.error("[cuadre] no se pudo enviar el correo:", e);
+  }
 
   revalidatePath("/ventas");
   return { success: true, salesTotal: tot?.cobrado ?? "0" };

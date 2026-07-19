@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   createProduct, updateProduct, registerSale, registerSaleAbono, cancelSale,
-  confirmShiftOpening, submitShiftClosure,
+  confirmShiftOpening, submitShiftClosure, registerDayPass,
 } from "@/actions/ventas";
 import { searchMembersForPayment } from "@/actions/payments";
 import {
@@ -41,8 +41,13 @@ const STATUS_BADGE: Record<string, string> = {
 const inputCls = "w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2 text-olimpo-text focus:border-olimpo-gold focus:outline-none";
 const labelCls = "block text-xs text-olimpo-text-muted mb-1 uppercase tracking-wide";
 
+interface DayPassInfo {
+  total: number;
+  items: { id: string; personName: string | null; amount: string; createdAt: Date | string }[];
+}
+
 export function VentasClient({
-  isAdmin, gyms, products, sales, summary, shiftStatus, closures,
+  isAdmin, gyms, products, sales, summary, shiftStatus, closures, dayPasses,
 }: {
   isAdmin: boolean;
   gyms: { id: string; name: string }[];
@@ -51,6 +56,7 @@ export function VentasClient({
   summary: Summary | null;
   shiftStatus: ShiftStatus | null;
   closures: Closure[];
+  dayPasses: DayPassInfo;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"ventas" | "inventario" | "cuadres">("ventas");
@@ -163,6 +169,19 @@ export function VentasClient({
           </button>
         ))}
         <div className="flex-1" />
+        <button
+          onClick={() => {
+            const name = prompt("Pago por día — Nombre del visitante (opcional):");
+            if (name !== null) {
+              act(async () => {
+                const res = await registerDayPass({ personName: name || undefined });
+                alert(`✓ Pago por día registrado: Q${Number(res.amount).toFixed(2)}`);
+              });
+            }
+          }}
+          className="px-4 py-2 rounded-lg border border-green-500/50 text-green-400 font-bold flex items-center gap-2 hover:bg-green-500/10">
+          🎟️ Pago por día {dayPasses.items.length > 0 && `(hoy: ${dayPasses.items.length} · Q${dayPasses.total.toFixed(2)})`}
+        </button>
         <button onClick={() => setShowSaleModal(true)}
           className="px-4 py-2 rounded-lg bg-olimpo-gold text-black font-bold flex items-center gap-2 hover:bg-olimpo-gold/90">
           <ShoppingCart className="w-4 h-4" /> Nueva venta

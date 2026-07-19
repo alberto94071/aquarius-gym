@@ -16,7 +16,12 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
     pricingMonthly: "0",
     pricingGroupDefault: "0",
     enrollmentFee: "0",
-    cardFee: "0"
+    cardFee: "0",
+    pricingDayPass: "0",
+    shiftAmStart: "6",
+    shiftAmEnd: "13",
+    shiftPmStart: "13",
+    shiftPmEnd: "21",
   });
 
   useEffect(() => {
@@ -26,7 +31,12 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
         pricingMonthly: gym.pricingMonthly || "0",
         pricingGroupDefault: gym.pricingGroupDefault || "0",
         enrollmentFee: gym.enrollmentFee || "0",
-        cardFee: gym.cardFee || "0"
+        cardFee: gym.cardFee || "0",
+        pricingDayPass: gym.pricingDayPass || "15",
+        shiftAmStart: String(gym.shiftAmStart ?? 6),
+        shiftAmEnd: String(gym.shiftAmEnd ?? 13),
+        shiftPmStart: String(gym.shiftPmStart ?? 13),
+        shiftPmEnd: String(gym.shiftPmEnd ?? 21),
       });
       setSuccess(false);
     }
@@ -48,6 +58,11 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
       formData.append("pricingGroupDefault", prices.pricingGroupDefault);
       formData.append("enrollmentFee", prices.enrollmentFee);
       formData.append("cardFee", prices.cardFee);
+      formData.append("pricingDayPass", prices.pricingDayPass);
+      formData.append("shiftAmStart", prices.shiftAmStart);
+      formData.append("shiftAmEnd", prices.shiftAmEnd);
+      formData.append("shiftPmStart", prices.shiftPmStart);
+      formData.append("shiftPmEnd", prices.shiftPmEnd);
 
       await updateGymPricing(selectedGymId, formData);
       setSuccess(true);
@@ -140,9 +155,49 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
                 />
                 <p className="text-xs text-olimpo-text-muted mt-1">Si es 0, no se cobrará el carné.</p>
               </div>
+
+              <div>
+                <label className="block text-sm text-olimpo-text-muted mb-1">Pago por Día (Q)</label>
+                <input
+                  type="number"
+                  name="pricingDayPass"
+                  value={prices.pricingDayPass}
+                  onChange={handleChange}
+                  min="0" step="0.01" required
+                  className="w-full px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
+                />
+                <p className="text-xs text-olimpo-text-muted mt-1">Lo que paga un visitante por entrenar un solo día en esta sede.</p>
+              </div>
             </div>
           </div>
-          
+
+          <div className="p-4 rounded-xl border border-olimpo-surface-light bg-olimpo-bg md:col-span-2">
+            <h3 className="font-medium text-olimpo-gold mb-1">Horarios de Turnos de esta Sede</h3>
+            <p className="text-xs text-olimpo-text-muted mb-4">
+              Definen el turno de las secretarias y la hora límite del cuadre (formato 24 h, ej. 13 = 1:00 PM).
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {([
+                ["shiftAmStart", "Mañana: inicia"],
+                ["shiftAmEnd", "Mañana: termina"],
+                ["shiftPmStart", "Tarde: inicia"],
+                ["shiftPmEnd", "Tarde: termina"],
+              ] as const).map(([name, label]) => (
+                <div key={name}>
+                  <label className="block text-sm text-olimpo-text-muted mb-1">{label}</label>
+                  <input
+                    type="number"
+                    name={name}
+                    value={prices[name]}
+                    onChange={handleChange}
+                    min="0" max="23" required
+                    className="w-full px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
         </div>
 
         {success && (

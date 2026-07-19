@@ -4,7 +4,7 @@ import { systemUsers, gyms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
-import { listProducts, listSales, getSalesSummary, getMyShiftStatus, listShiftClosures } from "@/actions/ventas";
+import { listProducts, listSales, getSalesSummary, getMyShiftStatus, listShiftClosures, listTodayDayPasses } from "@/actions/ventas";
 import { VentasClient } from "@/components/ventas/VentasClient";
 
 export default async function VentasPage() {
@@ -20,12 +20,13 @@ export default async function VentasPage() {
   const isAdmin = currentUser.role === "admin";
   const allGyms = isAdmin ? await db.select({ id: gyms.id, name: gyms.name }).from(gyms).orderBy(gyms.name) : [];
 
-  const [productsList, salesList, summary, shiftStatus, closures] = await Promise.all([
+  const [productsList, salesList, summary, shiftStatus, closures, todayPasses] = await Promise.all([
     listProducts(),
     listSales(),
     isAdmin ? getSalesSummary() : Promise.resolve(null),
     getMyShiftStatus(),
     listShiftClosures(),
+    listTodayDayPasses(),
   ]);
 
   return (
@@ -56,6 +57,15 @@ export default async function VentasPage() {
           inventory: shiftStatus.inventory,
         } : null}
         closures={closures}
+        dayPasses={{
+          total: todayPasses.total,
+          items: todayPasses.items.map((p) => ({
+            id: p.id,
+            personName: p.personName,
+            amount: p.amount,
+            createdAt: p.createdAt,
+          })),
+        }}
       />
     </div>
   );

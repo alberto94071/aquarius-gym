@@ -87,8 +87,45 @@ CREATE TABLE IF NOT EXISTS shift_closures (
   CONSTRAINT shift_closures_unique UNIQUE (gym_id, user_id, closure_date, shift)
 );
 
+-- Horarios de turno y pago por día, configurables POR SEDE
+ALTER TABLE gyms
+  ADD COLUMN IF NOT EXISTS pricing_day_pass numeric(10,2) DEFAULT 15 NOT NULL,
+  ADD COLUMN IF NOT EXISTS shift_am_start integer DEFAULT 6 NOT NULL,
+  ADD COLUMN IF NOT EXISTS shift_am_end integer DEFAULT 13 NOT NULL,
+  ADD COLUMN IF NOT EXISTS shift_pm_start integer DEFAULT 13 NOT NULL,
+  ADD COLUMN IF NOT EXISTS shift_pm_end integer DEFAULT 21 NOT NULL;
+
+-- Huella del miembro (template del lector HID)
+ALTER TABLE members ADD COLUMN IF NOT EXISTS fingerprint_template text;
+
+-- Pagos por día (visitantes sin membresía)
+CREATE TABLE IF NOT EXISTS day_passes (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  gym_id uuid NOT NULL REFERENCES gyms(id),
+  person_name varchar(255),
+  amount numeric(10,2) NOT NULL,
+  shift "shift",
+  sold_by uuid REFERENCES system_users(id),
+  created_at timestamp DEFAULT now() NOT NULL
+);
+
+-- Asistencias (check-in por huella)
+DO $$ BEGIN
+  CREATE TYPE "attendance_source" AS ENUM ('huella', 'manual');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS attendances (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+  member_id uuid NOT NULL REFERENCES members(id),
+  gym_id uuid NOT NULL REFERENCES gyms(id),
+  checkin_at timestamp DEFAULT now() NOT NULL,
+  source "attendance_source" DEFAULT 'huella' NOT NULL
+);
+
 -- Verificación
 SELECT 'products' AS tabla, count(*) FROM products
 UNION ALL SELECT 'sales', count(*) FROM sales
 UNION ALL SELECT 'sale_payments', count(*) FROM sale_payments
-UNION ALL SELECT 'shift_closures', count(*) FROM shift_closures;
+UNION ALL SELECT 'shift_closures', count(*) FROM shift_closures
+UNION ALL SELECT 'day_passes', count(*) FROM day_passes
+UNION ALL SELECT 'attendances', count(*) FROM attendances;
