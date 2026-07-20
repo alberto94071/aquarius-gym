@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from "react-native";
 import {
   GoogleSignin,
@@ -105,10 +106,11 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View style={styles.logoArea}>
-          <Text style={styles.logoTitle}>AQUARIUS</Text>
-          <Text style={styles.logoSubtitle}>GYM</Text>
-          <View style={styles.divider} />
-          <Text style={styles.tagline}>Entrena sin límites.</Text>
+          <Image
+            source={require("../../assets/aquarius-logo.jpg")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Card */}
@@ -214,32 +216,12 @@ const styles = StyleSheet.create({
   },
   logoArea: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 32,
   },
-  logoTitle: {
-    fontSize: 52,
-    fontWeight: "900",
-    color: Colors.gold,
-    letterSpacing: 12,
-  },
-  logoSubtitle: {
-    fontSize: 28,
-    fontWeight: "300",
-    color: Colors.text,
-    letterSpacing: 16,
-    marginTop: -8,
-  },
-  divider: {
-    width: 60,
-    height: 2,
-    backgroundColor: Colors.gold,
-    marginVertical: 16,
-  },
-  tagline: {
-    color: Colors.dim,
-    fontSize: 13,
-    letterSpacing: 1,
-    textAlign: "center",
+  logoImage: {
+    width: 260,
+    height: 224,
+    borderRadius: 20,
   },
   card: {
     width: "100%",
