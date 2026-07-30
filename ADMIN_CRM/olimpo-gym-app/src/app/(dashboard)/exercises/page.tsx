@@ -25,6 +25,10 @@ export default async function ExercisesPage() {
       </div>
 
       <ExercisesClient exercises={items} muscleLabels={MUSCLE_LABELS} />
+
+      <p className="text-xs text-olimpo-text-muted text-center pt-2">
+        Imágenes y animaciones © Gym visual — gymvisual.com
+      </p>
     </div>
   );
 }

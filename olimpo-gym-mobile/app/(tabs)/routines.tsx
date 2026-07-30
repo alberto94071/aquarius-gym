@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import Svg, { Path, Circle, Rect, Polyline, Line, Text as SvgText } from "react-native-svg";
 import YoutubePlayer from "react-native-youtube-iframe";
+import { Image as AnimatedImage } from "expo-image";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
 import type { Routine, WorkoutSession, SetLog } from "@/lib/types";
@@ -514,6 +515,7 @@ export default function RoutinesScreen() {
               const logs = setLogs[ex.exerciseId] ?? [];
               const allDone = Array.from({ length: setCount }, (_, i) => i).every((i) => logs[i]?.completed);
               const ytId = ex.videoUrl ? getYouTubeId(ex.videoUrl) : null;
+              const isGif = !ytId && !!ex.videoUrl && /\.gif($|\?)/i.test(ex.videoUrl);
               const isPlaying = playingVideo === ex.exerciseId;
 
               return (
@@ -551,6 +553,16 @@ export default function RoutinesScreen() {
                           </View>
                         </TouchableOpacity>
                       )}
+                    </View>
+                  ) : isGif ? (
+                    <View>
+                      <AnimatedImage
+                        source={{ uri: ex.videoUrl! }}
+                        style={styles.exerciseImage}
+                        contentFit="cover"
+                        autoplay
+                      />
+                      <Text style={styles.mediaAttribution}>© Gym visual — gymvisual.com</Text>
                     </View>
                   ) : ex.imageUrl ? (
                     <Image source={{ uri: ex.imageUrl }} style={styles.exerciseImage} resizeMode="cover" />
@@ -779,6 +791,11 @@ const styles = StyleSheet.create({
   },
   exerciseCardDone: { borderColor: Colors.green + "50" },
   exerciseImage: { width: "100%", height: 160 },
+  mediaAttribution: {
+    position: "absolute", bottom: 4, right: 8,
+    color: "#fff", fontSize: 8, opacity: 0.7,
+    textShadowColor: "#000", textShadowRadius: 2,
+  },
   exerciseHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
