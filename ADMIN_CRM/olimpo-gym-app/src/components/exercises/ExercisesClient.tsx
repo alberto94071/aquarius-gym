@@ -285,13 +285,13 @@ export function ExercisesClient({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider mb-1.5">
-                  🎬 URL de Video YouTube (del instructor)
+                  🎬 Video / GIF de la técnica
                 </label>
                 <input
                   value={form.videoUrl}
                   onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
                   className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2.5 text-olimpo-text focus:outline-none focus:border-olimpo-gold text-sm"
-                  placeholder="https://youtube.com/watch?v=..."
+                  placeholder="Link de YouTube, .gif o .mp4 propio"
                 />
                 {form.videoUrl && getYouTubeId(form.videoUrl) && (
                   <div className="mt-2 relative rounded-lg overflow-hidden">
@@ -308,8 +308,14 @@ export function ExercisesClient({
                     <span className="absolute bottom-1 right-2 text-[10px] text-white font-bold">Vista previa ✓</span>
                   </div>
                 )}
+                {form.videoUrl && !getYouTubeId(form.videoUrl) && /\.gif($|\?)/i.test(form.videoUrl) && (
+                  <div className="mt-2 relative rounded-lg overflow-hidden">
+                    <img src={form.videoUrl} className="w-full h-24 object-cover rounded-lg" alt="Preview GIF" />
+                    <span className="absolute bottom-1 right-2 text-[10px] text-white font-bold bg-black/50 px-1.5 py-0.5 rounded">GIF ✓</span>
+                  </div>
+                )}
                 <p className="text-[10px] text-olimpo-text-muted mt-1">
-                  El video se reproducirá dentro de la app sin salir a YouTube.
+                  Acepta: link de YouTube, un .gif animado, o un .mp4/.mov propio. Se reproduce dentro de la app sin salir a otra aplicación.
                 </p>
               </div>
               <div>

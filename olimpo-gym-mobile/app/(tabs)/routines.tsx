@@ -16,6 +16,7 @@ import {
 import Svg, { Path, Circle, Rect, Polyline, Line, Text as SvgText } from "react-native-svg";
 import YoutubePlayer from "react-native-youtube-iframe";
 import { Image as AnimatedImage } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
 import type { Routine, WorkoutSession, SetLog } from "@/lib/types";
@@ -57,6 +58,102 @@ function TrendingIcon({ color = Colors.gold, size = 16 }: { color?: string; size
       <Polyline points="17 6 23 6 23 12" />
     </Svg>
   );
+}
+
+// ─── Exercise Media (YouTube / GIF / video propio / imagen estática) ──────────
+
+/** El GIF/imagen es del dataset público (gymvisual) → requiere mostrar su atribución. */
+function isGymVisualMedia(url?: string | null): boolean {
+  return !!url && url.includes("/exercises-dataset/");
+}
+
+function ExerciseMedia({
+  videoUrl,
+  imageUrl,
+  isPlaying,
+  onPlay,
+  onEnded,
+}: {
+  videoUrl: string | null;
+  imageUrl: string | null;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onEnded: () => void;
+}) {
+  const ytId = videoUrl ? getYouTubeId(videoUrl) : null;
+  const isGif = !ytId && !!videoUrl && /\.gif($|\?)/i.test(videoUrl);
+  const isVideoFile = !ytId && !isGif && !!videoUrl && /\.(mp4|mov|webm|m4v)($|\?)/i.test(videoUrl);
+
+  // El hook SIEMPRE se llama (nunca condicionalmente): con source null, el
+  // player queda inactivo y no consume recursos.
+  const player = useVideoPlayer(isVideoFile ? videoUrl! : null, (p) => {
+    p.loop = true;
+    p.play();
+  });
+
+  if (ytId) {
+    return (
+      <View style={styles.videoContainer}>
+        {isPlaying ? (
+          <YoutubePlayer
+            height={200}
+            play={true}
+            videoId={ytId}
+            onChangeState={(state: string) => {
+              if (state === "ended") onEnded();
+            }}
+          />
+        ) : (
+          <TouchableOpacity onPress={onPlay} style={styles.videoThumb} activeOpacity={0.85}>
+            <Image
+              source={{ uri: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+            <View style={styles.playOverlay}>
+              <View style={styles.playButton}>
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="white">
+                  <Path d="M8 5v14l11-7z" />
+                </Svg>
+              </View>
+              <Text style={styles.videoLabel}>Ver técnica del instructor</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }
+
+  if (isVideoFile) {
+    return (
+      <VideoView
+        style={styles.exerciseImage}
+        player={player}
+        contentFit="cover"
+        nativeControls={false}
+      />
+    );
+  }
+
+  if (isGif) {
+    return (
+      <View>
+        <AnimatedImage source={{ uri: videoUrl! }} style={styles.exerciseImage} contentFit="cover" autoplay />
+        {isGymVisualMedia(videoUrl) && <Text style={styles.mediaAttribution}>© Gym visual — gymvisual.com</Text>}
+      </View>
+    );
+  }
+
+  if (imageUrl) {
+    return (
+      <View>
+        <Image source={{ uri: imageUrl }} style={styles.exerciseImage} resizeMode="cover" />
+        {isGymVisualMedia(imageUrl) && <Text style={styles.mediaAttribution}>© Gym visual — gymvisual.com</Text>}
+      </View>
+    );
+  }
+
+  return null;
 }
 
 // ─── Rest Timer ───────────────────────────────────────────────────────────────
@@ -514,59 +611,17 @@ export default function RoutinesScreen() {
               const setCount = parseSetCount(ex.sets);
               const logs = setLogs[ex.exerciseId] ?? [];
               const allDone = Array.from({ length: setCount }, (_, i) => i).every((i) => logs[i]?.completed);
-              const ytId = ex.videoUrl ? getYouTubeId(ex.videoUrl) : null;
-              const isGif = !ytId && !!ex.videoUrl && /\.gif($|\?)/i.test(ex.videoUrl);
               const isPlaying = playingVideo === ex.exerciseId;
 
               return (
                 <View key={ex.routineExerciseId} style={[styles.exerciseCard, allDone && styles.exerciseCardDone]}>
-                  {/* YouTube player or image */}
-                  {ytId ? (
-                    <View style={styles.videoContainer}>
-                      {isPlaying ? (
-                        <YoutubePlayer
-                          height={200}
-                          play={true}
-                          videoId={ytId}
-                          onChangeState={(state: string) => {
-                            if (state === "ended") setPlayingVideo(null);
-                          }}
-                        />
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => setPlayingVideo(ex.exerciseId)}
-                          style={styles.videoThumb}
-                          activeOpacity={0.85}
-                        >
-                          <Image
-                            source={{ uri: `https://img.youtube.com/vi/${ytId}/mqdefault.jpg` }}
-                            style={StyleSheet.absoluteFill}
-                            resizeMode="cover"
-                          />
-                          <View style={styles.playOverlay}>
-                            <View style={styles.playButton}>
-                              <Svg width={20} height={20} viewBox="0 0 24 24" fill="white">
-                                <Path d="M8 5v14l11-7z" />
-                              </Svg>
-                            </View>
-                            <Text style={styles.videoLabel}>Ver técnica del instructor</Text>
-                          </View>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ) : isGif ? (
-                    <View>
-                      <AnimatedImage
-                        source={{ uri: ex.videoUrl! }}
-                        style={styles.exerciseImage}
-                        contentFit="cover"
-                        autoplay
-                      />
-                      <Text style={styles.mediaAttribution}>© Gym visual — gymvisual.com</Text>
-                    </View>
-                  ) : ex.imageUrl ? (
-                    <Image source={{ uri: ex.imageUrl }} style={styles.exerciseImage} resizeMode="cover" />
-                  ) : null}
+                  <ExerciseMedia
+                    videoUrl={ex.videoUrl}
+                    imageUrl={ex.imageUrl}
+                    isPlaying={isPlaying}
+                    onPlay={() => setPlayingVideo(ex.exerciseId)}
+                    onEnded={() => setPlayingVideo(null)}
+                  />
 
                   {/* Header */}
                   <View style={styles.exerciseHeader}>
