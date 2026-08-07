@@ -4,6 +4,7 @@ import { members, gyms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { signMobileJWT } from "@/lib/mobile-auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { needsTermsAcceptance } from "@/lib/legal";
 
 const GOOGLE_TOKEN_INFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
       email: row.email,
       gymId: row.gymId,
     });
+    const terms = await needsTermsAcceptance(row.id);
 
     return NextResponse.json(
       {
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
           status: row.status,
           photoUrl: row.photoUrl,
         },
+        termsAcceptanceRequired: terms.needsAcceptance,
       },
       { headers: { "Cache-Control": "no-store" } }
     );

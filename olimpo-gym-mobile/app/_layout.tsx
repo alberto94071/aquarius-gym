@@ -11,7 +11,7 @@ import { Colors } from "@/constants/colors";
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
-  const { member, loading } = useAuth();
+  const { member, loading, termsAcceptanceRequired } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const [fontsLoaded] = useFonts({ Cinzel_700Bold });
@@ -23,12 +23,17 @@ function RootNavigator() {
   useEffect(() => {
     if (loading || !fontsLoaded) return;
     const inAuthGroup = segments[0] === "(auth)";
+    const inTerms = segments[0] === "terms";
+
     if (!member && !inAuthGroup) {
       router.replace("/(auth)/login");
-    } else if (member && inAuthGroup) {
+    } else if (member && termsAcceptanceRequired && !inTerms) {
+      // Bloquea el acceso a cualquier pantalla hasta que acepte los términos
+      router.replace("/terms");
+    } else if (member && !termsAcceptanceRequired && (inAuthGroup || inTerms)) {
       router.replace("/(tabs)");
     }
-  }, [member, loading, fontsLoaded, segments]);
+  }, [member, loading, fontsLoaded, segments, termsAcceptanceRequired]);
 
   useEffect(() => {
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -49,6 +54,7 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
+        <Stack.Screen name="terms" options={{ gestureEnabled: false }} />
         <Stack.Screen name="announcement/[id]" />
         <Stack.Screen name="birthday" />
         <Stack.Screen name="measurements" />

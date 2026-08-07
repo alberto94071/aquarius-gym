@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { members, gyms } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getMobileAuth } from "@/lib/mobile-auth";
+import { needsTermsAcceptance } from "@/lib/legal";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, error: "Miembro no encontrado" });
     }
 
+    const terms = await needsTermsAcceptance(row.id);
+
     return NextResponse.json({
       valid: true,
       member: {
@@ -42,6 +45,7 @@ export async function POST(req: NextRequest) {
         status: row.status,
         photoUrl: row.photoUrl,
       },
+      termsAcceptanceRequired: terms.needsAcceptance,
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Error interno";

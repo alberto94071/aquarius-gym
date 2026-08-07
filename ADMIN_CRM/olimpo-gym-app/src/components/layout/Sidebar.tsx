@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   BarChart2,
   ShoppingCart,
+  FileText,
 } from "lucide-react";
 
 const MENU_ITEMS = [
@@ -41,6 +42,7 @@ const ADMIN_ITEMS = [
   { name: "Finanzas", href: "/finanzas", icon: BarChart2 },
   { name: "Precios", href: "/pricing", icon: CircleDollarSign },
   { name: "Roles", href: "/roles", icon: ShieldCheck },
+  { name: "Términos Legales", href: "/legal", icon: FileText },
 ];
 
 const UPCOMING_ITEMS = [

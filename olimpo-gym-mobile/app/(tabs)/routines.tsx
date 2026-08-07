@@ -67,6 +67,17 @@ function isGymVisualMedia(url?: string | null): boolean {
   return !!url && url.includes("/exercises-dataset/");
 }
 
+/** Marca de agua de Aquarius Gym sobre el medio del ejercicio. */
+function GymLogoWatermark() {
+  return (
+    <Image
+      source={require("../../assets/aquarius-logo.jpg")}
+      style={styles.mediaLogo}
+      resizeMode="contain"
+    />
+  );
+}
+
 function ExerciseMedia({
   videoUrl,
   imageUrl,
@@ -118,6 +129,7 @@ function ExerciseMedia({
               </View>
               <Text style={styles.videoLabel}>Ver técnica del instructor</Text>
             </View>
+            <GymLogoWatermark />
           </TouchableOpacity>
         )}
       </View>
@@ -126,12 +138,10 @@ function ExerciseMedia({
 
   if (isVideoFile) {
     return (
-      <VideoView
-        style={styles.exerciseImage}
-        player={player}
-        contentFit="cover"
-        nativeControls={false}
-      />
+      <View>
+        <VideoView style={styles.exerciseImage} player={player} contentFit="cover" nativeControls={false} />
+        <GymLogoWatermark />
+      </View>
     );
   }
 
@@ -139,6 +149,7 @@ function ExerciseMedia({
     return (
       <View>
         <AnimatedImage source={{ uri: videoUrl! }} style={styles.exerciseImage} contentFit="cover" autoplay />
+        <GymLogoWatermark />
         {isGymVisualMedia(videoUrl) && <Text style={styles.mediaAttribution}>© Gym visual — gymvisual.com</Text>}
       </View>
     );
@@ -148,6 +159,7 @@ function ExerciseMedia({
     return (
       <View>
         <Image source={{ uri: imageUrl }} style={styles.exerciseImage} resizeMode="cover" />
+        <GymLogoWatermark />
         {isGymVisualMedia(imageUrl) && <Text style={styles.mediaAttribution}>© Gym visual — gymvisual.com</Text>}
       </View>
     );
@@ -850,6 +862,11 @@ const styles = StyleSheet.create({
     position: "absolute", bottom: 4, right: 8,
     color: "#fff", fontSize: 8, opacity: 0.7,
     textShadowColor: "#000", textShadowRadius: 2,
+  },
+  mediaLogo: {
+    position: "absolute", bottom: 6, left: 8,
+    width: 34, height: 34, borderRadius: 6,
+    opacity: 0.85,
   },
   exerciseHeader: {
     flexDirection: "row",

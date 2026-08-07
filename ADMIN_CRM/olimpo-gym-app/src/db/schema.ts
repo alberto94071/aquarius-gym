@@ -122,6 +122,8 @@ export const members = pgTable("members", {
   emergencyContactPhone: varchar("emergency_contact_phone", { length: 50 }),
   emergencyContactRelation: varchar("emergency_contact_relation", { length: 100 }),
   fingerprintTemplate: text("fingerprint_template"), // template del lector HID (base64), capturado al inscribir
+  termsAcceptedVersion: integer("terms_accepted_version"), // versión de legal_documents que aceptó
+  termsAcceptedAt: timestamp("terms_accepted_at"),
   registeredBy: uuid("registered_by").references(() => systemUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -410,5 +412,19 @@ export const homeContent = pgTable("home_content", {
   pinned: boolean("pinned").default(false).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   createdBy: uuid("created_by").references(() => systemUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ─── Documento legal (Términos de Uso y Consentimiento de Riesgo) ────────────
+// Historial versionado: cada publicación inserta una fila nueva. La versión
+// más alta es la vigente; los miembros deben (re)aceptarla si la suya quedó
+// atrás. NUNCA se editan filas existentes — así queda el registro legal de
+// qué texto exacto aceptó cada miembro y cuándo.
+export const legalDocuments = pgTable("legal_documents", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  version: integer("version").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  contentHtml: text("content_html").notNull(),
+  publishedBy: uuid("published_by").references(() => systemUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
