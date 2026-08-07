@@ -16,8 +16,15 @@ interface Product { id: string; name: string; category: string | null; costPrice
 interface Sale {
   id: string; quantity: number; unitPrice: string; total: string; amountPaid: string;
   status: string; shift: string | null; saleDate: Date | string; notes: string | null;
+  paymentIntent: string | null; intendedAmount: string | null;
   productName: string; memberName: string | null; memberCode: string | null;
 }
+
+const INTENT_LABEL: Record<string, string> = {
+  luego: "🏪 Pagará en la sede",
+  abono: "💵 Dará abono",
+  mensualidad: "🗓️ Cargar a mensualidad",
+};
 interface Summary { totalVendido: number; totalCobrado: number; porCobrar: number; totalCosto: number; ganancia: number; numVentas: number }
 interface ShiftStatus {
   status: string; openingConfirmed: boolean; minutesLeft: number; shouldWarn: boolean;
@@ -215,6 +222,12 @@ export function VentasClient({
                     <td className="px-4 py-3">
                       <p className="text-olimpo-text font-medium">{s.quantity}× {s.productName}</p>
                       <p className="text-xs text-olimpo-text-muted">{new Date(s.saleDate).toLocaleString("es-GT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}{s.shift ? ` · ${s.shift.toUpperCase()}` : ""}</p>
+                      {s.status === "apartado" && s.paymentIntent && (
+                        <p className="text-xs text-olimpo-gold mt-1">
+                          {INTENT_LABEL[s.paymentIntent] ?? s.paymentIntent}
+                          {s.paymentIntent === "abono" && s.intendedAmount ? ` de ${Q(s.intendedAmount)}` : ""}
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell text-olimpo-text-muted">
                       {s.memberName ? `${s.memberName} (${s.memberCode})` : "Mostrador"}

@@ -222,6 +222,8 @@ export async function listSales(gymFilter?: string) {
       shift: sales.shift,
       saleDate: sales.saleDate,
       notes: sales.notes,
+      paymentIntent: sales.paymentIntent,
+      intendedAmount: sales.intendedAmount,
       productName: products.name,
       memberName: members.name,
       memberCode: members.code,

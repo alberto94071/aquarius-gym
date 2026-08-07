@@ -345,6 +345,11 @@ export const products = pgTable("products", {
 });
 
 // Ventas (contado, crédito a miembro, o apartado desde la app)
+// Preferencia de pago que el miembro expresa al apartar desde la app (solo
+// informativo para el personal — el cobro real siempre lo registra el staff
+// en la sede; la app no procesa pagos).
+export const salePaymentIntentEnum = pgEnum("sale_payment_intent", ["luego", "abono", "mensualidad"]);
+
 export const sales = pgTable("sales", {
   id: uuid("id").defaultRandom().primaryKey(),
   gymId: uuid("gym_id").references(() => gyms.id).notNull(),
@@ -359,6 +364,8 @@ export const sales = pgTable("sales", {
   soldBy: uuid("sold_by").references(() => systemUsers.id), // null = pedido desde la app
   saleDate: timestamp("sale_date").defaultNow().notNull(),
   notes: text("notes"),
+  paymentIntent: salePaymentIntentEnum("payment_intent").default("luego").notNull(),
+  intendedAmount: decimal("intended_amount", { precision: 10, scale: 2 }), // lo que el miembro dijo que abonaría (declarado, no cobrado)
 });
 
 // Abonos a una venta (pagos parciales)

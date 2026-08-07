@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity,
   ActivityIndicator, Alert, Image,
@@ -6,15 +6,7 @@ import {
 import Svg, { Path, Circle } from "react-native-svg";
 import { Colors } from "@/constants/colors";
 import { apiFetch } from "@/lib/api";
-
-interface StoreProduct {
-  id: string;
-  name: string;
-  category: string | null;
-  salePrice: string;
-  stock: number;
-  imageUrl: string | null;
-}
+import { OrderModal, type StoreProduct, type PaymentIntent } from "@/components/OrderModal";
 
 interface DebtItem {
   id: string;
@@ -46,7 +38,8 @@ export default function StoreScreen() {
   const [totalDebt, setTotalDebt] = useState("0");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [ordering, setOrdering] = useState<string | null>(null);
+  const [orderingProduct, setOrderingProduct] = useState<StoreProduct | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -72,32 +65,31 @@ export default function StoreScreen() {
     setRefreshing(false);
   }, [load]);
 
-  function confirmOrder(p: StoreProduct) {
-    Alert.alert(
-      `Apartar ${p.name}`,
-      `Precio: ${Q(p.salePrice)}\n\nAl apartar te comprometes a pagarlo en tu sede (puedes darlo en abonos). Si no lo pagas, el saldo se sumará a tu siguiente mensualidad.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Apartar",
-          onPress: async () => {
-            setOrdering(p.id);
-            try {
-              const res = await apiFetch<{ success: boolean; message: string }>("/api/mobile/store/order", {
-                method: "POST",
-                body: JSON.stringify({ productId: p.id, quantity: 1 }),
-              });
-              Alert.alert("✅ Apartado", res.message);
-              await load();
-            } catch (e) {
-              Alert.alert("Error", e instanceof Error ? e.message : "No se pudo apartar");
-            } finally {
-              setOrdering(null);
-            }
-          },
-        },
-      ]
-    );
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => { if (p.category) set.add(p.category); });
+    return Array.from(set).sort();
+  }, [products]);
+
+  const visibleProducts = useMemo(
+    () => (activeCategory ? products.filter((p) => p.category === activeCategory) : products),
+    [products, activeCategory]
+  );
+
+  async function handleConfirmOrder(payload: { quantity: number; paymentIntent: PaymentIntent; intendedAmount?: number }) {
+    if (!orderingProduct) return;
+    const res = await apiFetch<{ success: boolean; message: string }>("/api/mobile/store/order", {
+      method: "POST",
+      body: JSON.stringify({
+        productId: orderingProduct.id,
+        quantity: payload.quantity,
+        paymentIntent: payload.paymentIntent,
+        intendedAmount: payload.intendedAmount,
+      }),
+    });
+    setOrderingProduct(null);
+    Alert.alert("✅ Apartado", res.message);
+    await load();
   }
 
   if (loading) {
@@ -105,6 +97,7 @@ export default function StoreScreen() {
   }
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
@@ -137,9 +130,30 @@ export default function StoreScreen() {
         </View>
       )}
 
+      {/* ── Categorías ── */}
+      {categories.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll} contentContainerStyle={styles.categoryRow}>
+          <TouchableOpacity
+            style={[styles.categoryChip, activeCategory === null && styles.categoryChipActive]}
+            onPress={() => setActiveCategory(null)}
+          >
+            <Text style={[styles.categoryChipText, activeCategory === null && styles.categoryChipTextActive]}>Todo</Text>
+          </TouchableOpacity>
+          {categories.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.categoryChip, activeCategory === c && styles.categoryChipActive]}
+              onPress={() => setActiveCategory(c)}
+            >
+              <Text style={[styles.categoryChipText, activeCategory === c && styles.categoryChipTextActive]}>{c}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {/* ── Productos ── */}
       <View style={styles.grid}>
-        {products.map((p) => (
+        {visibleProducts.map((p) => (
           <View key={p.id} style={styles.card}>
             {p.imageUrl ? (
               <Image source={{ uri: p.imageUrl }} style={styles.cardImage} resizeMode="cover" />
@@ -154,14 +168,11 @@ export default function StoreScreen() {
               <Text style={styles.cardPrice}>{Q(p.salePrice)}</Text>
               <Text style={styles.cardStock}>{p.stock} disponibles</Text>
               <TouchableOpacity
-                style={[styles.buyBtn, ordering === p.id && { opacity: 0.5 }]}
-                disabled={ordering !== null}
-                onPress={() => confirmOrder(p)}
+                style={styles.buyBtn}
+                onPress={() => setOrderingProduct(p)}
                 activeOpacity={0.8}
               >
-                {ordering === p.id
-                  ? <ActivityIndicator color="#000" size="small" />
-                  : <Text style={styles.buyBtnText}>Apartar</Text>}
+                <Text style={styles.buyBtnText}>Apartar</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -175,7 +186,22 @@ export default function StoreScreen() {
           <Text style={styles.emptyText}>Pronto habrá aguas, bebidas y suplementos disponibles.</Text>
         </View>
       )}
-    </ScrollView>
+
+      {visibleProducts.length === 0 && products.length > 0 && (
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>No hay productos en esta categoría.</Text>
+        </View>
+      )}
+      </ScrollView>
+
+      {orderingProduct && (
+        <OrderModal
+          product={orderingProduct}
+          onClose={() => setOrderingProduct(null)}
+          onConfirm={handleConfirmOrder}
+        />
+      )}
+    </>
   );
 }
 
@@ -208,6 +234,16 @@ const styles = StyleSheet.create({
   debtDetail: { color: Colors.dim, fontSize: 11, marginTop: 1 },
   debtSaldo: { color: Colors.red, fontSize: 14, fontWeight: "800" },
   debtNote: { color: Colors.dim, fontSize: 11, marginTop: 8, fontStyle: "italic" },
+
+  categoryScroll: { marginBottom: 14 },
+  categoryRow: { gap: 8, paddingRight: 8 },
+  categoryChip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.card,
+  },
+  categoryChipActive: { borderColor: Colors.gold, backgroundColor: Colors.gold + "18" },
+  categoryChipText: { color: Colors.dim, fontSize: 12, fontWeight: "700" },
+  categoryChipTextActive: { color: Colors.gold },
 
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   card: {
