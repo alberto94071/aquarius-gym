@@ -31,8 +31,27 @@ function formatRelative(iso: string): string {
   return new Date(iso).toLocaleDateString("es-GT", { day: "2-digit", month: "short" });
 }
 
+const HTML_ENTITIES: Record<string, string> = {
+  "&nbsp;": " ",
+  "&amp;": "&",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&apos;": "'",
+};
+
+/** Texto plano para la vista previa: quita <style>/<script> COMPLETOS (no solo
+ * las etiquetas, para que el CSS/JS interno no se filtre como texto), el resto
+ * de las etiquetas HTML, y decodifica las entidades más comunes. */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z]+;|&#\d+;/gi, (m) => HTML_ENTITIES[m] ?? " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function AnnouncementCard({ announcement }: { announcement: Announcement }) {
