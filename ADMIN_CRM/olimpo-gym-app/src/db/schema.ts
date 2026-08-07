@@ -247,10 +247,11 @@ export const exercises = pgTable("exercises", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Routine templates
+// Routine templates — compartidas entre las 3 sedes (igual que el banco de
+// ejercicios); gymId solo queda como referencia informativa de quién la creó.
 export const routines = pgTable("routines", {
   id: uuid("id").defaultRandom().primaryKey(),
-  gymId: uuid("gym_id").references(() => gyms.id).notNull(),
+  gymId: uuid("gym_id").references(() => gyms.id),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   dayLabel: varchar("day_label", { length: 100 }),

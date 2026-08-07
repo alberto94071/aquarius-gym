@@ -24,21 +24,27 @@ export function AssignRoutineModal({ memberId, routines, currentRoutineId }: Pro
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<string>(currentRoutineId ?? "");
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   function handleAssign() {
     if (!selected) return;
+    setError("");
     startTransition(async () => {
-      await assignRoutineToMember(memberId, selected);
-      setSuccess(true);
-      router.refresh();
-      setTimeout(() => { setOpen(false); setSuccess(false); }, 1500);
+      try {
+        await assignRoutineToMember(memberId, selected);
+        setSuccess(true);
+        router.refresh();
+        setTimeout(() => { setOpen(false); setSuccess(false); }, 1500);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "No se pudo asignar la rutina");
+      }
     });
   }
 
   return (
     <>
       <button
-        onClick={() => { setOpen(true); setSuccess(false); setSelected(currentRoutineId ?? ""); }}
+        onClick={() => { setOpen(true); setSuccess(false); setError(""); setSelected(currentRoutineId ?? ""); }}
         className="flex items-center gap-2 border border-olimpo-gold/50 text-olimpo-gold px-3 py-1.5 rounded-lg text-sm hover:bg-olimpo-gold/10 transition-colors font-semibold"
       >
         <ListChecks className="w-4 h-4" />
@@ -91,6 +97,10 @@ export function AssignRoutineModal({ memberId, routines, currentRoutineId }: Pro
                       </button>
                     ))}
                   </div>
+                )}
+
+                {error && (
+                  <p className="text-olimpo-red text-sm bg-olimpo-red/10 border border-olimpo-red/20 rounded-lg px-3 py-2">{error}</p>
                 )}
 
                 <button

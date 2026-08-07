@@ -10,6 +10,64 @@ const MUSCLE_LABELS: Record<string, string> = {
   gluteos: "Glúteos", core: "Core", cardio: "Cardio", full_body: "Cuerpo completo",
 };
 
+function getYouTubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+/** Miniatura del ejercicio (GIF/video/imagen) para ver a la par de la rutina. */
+function ExerciseThumb({ name, videoUrl, imageUrl }: { name: string; videoUrl: string | null; imageUrl: string | null }) {
+  const ytId = videoUrl ? getYouTubeId(videoUrl) : null;
+  const isGif = !ytId && !!videoUrl && /\.gif($|\?)/i.test(videoUrl);
+  const isVideoFile = !ytId && !isGif && !!videoUrl && /\.(mp4|mov|webm|m4v)($|\?)/i.test(videoUrl);
+  const staticImage = !ytId && !isGif && !isVideoFile ? imageUrl : null;
+
+  const boxCls = "relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden bg-olimpo-bg border border-olimpo-surface-light shrink-0";
+
+  if (ytId) {
+    return (
+      <a href={videoUrl!} target="_blank" rel="noopener noreferrer" className={boxCls} title="Ver video en YouTube">
+        <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt={name} className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+          <div className="w-8 h-8 rounded-full bg-olimpo-gold/90 flex items-center justify-center">
+            <div className="w-0 h-0 border-y-[6px] border-y-transparent border-l-[9px] border-l-black ml-0.5" />
+          </div>
+        </div>
+      </a>
+    );
+  }
+
+  if (isGif) {
+    return (
+      <div className={boxCls}>
+        <img src={videoUrl!} alt={name} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  if (isVideoFile) {
+    return (
+      <div className={boxCls}>
+        <video src={videoUrl!} muted loop autoPlay playsInline className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  if (staticImage) {
+    return (
+      <div className={boxCls}>
+        <img src={staticImage} alt={name} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${boxCls} flex items-center justify-center`}>
+      <Dumbbell className="w-8 h-8 text-olimpo-text-muted" />
+    </div>
+  );
+}
+
 export default async function RoutineDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const routine = await getRoutineById(id);
@@ -47,6 +105,7 @@ export default async function RoutineDetailPage({ params }: { params: Promise<{ 
             {routine.exercises.map(({ re, exercise }, idx) => (
               <div key={re.id} className="p-5 flex gap-4 items-start">
                 <span className="text-2xl font-serif font-bold text-olimpo-gold/30 w-8 shrink-0 pt-0.5">{idx + 1}</span>
+                <ExerciseThumb name={exercise.name} videoUrl={exercise.videoUrl} imageUrl={exercise.imageUrl} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>

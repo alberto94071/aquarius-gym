@@ -6,23 +6,14 @@ import { eq, and, desc } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
+// Las rutinas se comparten entre las 3 sedes (igual que el banco de
+// ejercicios) — cualquier usuario puede asignar cualquier rutina a
+// cualquier miembro, sin importar en qué sede se haya creado.
 export async function getRoutines() {
   const session = await auth();
   if (!session?.user) throw new Error("No autorizado");
 
-  const [currentUser] = await db
-    .select()
-    .from(systemUsers)
-    .where(eq(systemUsers.email, session.user.email!));
-
-  if (currentUser.role === "admin") {
-    return db.select().from(routines).orderBy(desc(routines.createdAt));
-  }
-  return db
-    .select()
-    .from(routines)
-    .where(eq(routines.gymId, currentUser.gymId!))
-    .orderBy(desc(routines.createdAt));
+  return db.select().from(routines).orderBy(desc(routines.createdAt));
 }
 
 export async function getRoutineById(id: string) {
@@ -60,15 +51,13 @@ export async function createRoutine(data: {
     .from(systemUsers)
     .where(eq(systemUsers.email, session.user.email!));
 
-  // Los admins no están atados a una sede (gymId null) y deben elegir a
-  // cuál sede pertenece la rutina; el resto de roles usa su propia sede.
-  const targetGymId = currentUser.role === "admin" ? data.gymId : currentUser.gymId!;
-  if (!targetGymId) throw new Error("Selecciona una sede para la rutina");
-
+  // gymId es solo informativo (de qué sede la creó) — la rutina queda
+  // disponible para asignar en cualquier sede. Los admins no tienen sede
+  // fija, así que queda null para ellos.
   const [routine] = await db
     .insert(routines)
     .values({
-      gymId: targetGymId,
+      gymId: currentUser.gymId ?? data.gymId ?? null,
       name: data.name,
       description: data.description || null,
       dayLabel: data.dayLabel || null,
