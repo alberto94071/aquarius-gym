@@ -14,10 +14,17 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
   // Local state for the form
   const [prices, setPrices] = useState({
     pricingMonthly: "0",
+    pricingMonthlyVip: "",
+    pricingQuarterly: "",
+    pricingWeeklyBasico: "",
+    pricingWeeklyVip: "",
+    pricingBiweeklyBasico: "",
+    pricingBiweeklyVip: "",
     pricingGroupDefault: "0",
     enrollmentFee: "0",
     cardFee: "0",
     pricingDayPass: "0",
+    pricingDayPassVip: "",
     shiftAmStart: "6",
     shiftAmEnd: "13",
     shiftPmStart: "13",
@@ -29,10 +36,17 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
     if (gym) {
       setPrices({
         pricingMonthly: gym.pricingMonthly || "0",
+        pricingMonthlyVip: gym.pricingMonthlyVip || "",
+        pricingQuarterly: gym.pricingQuarterly || "",
+        pricingWeeklyBasico: gym.pricingWeeklyBasico || "",
+        pricingWeeklyVip: gym.pricingWeeklyVip || "",
+        pricingBiweeklyBasico: gym.pricingBiweeklyBasico || "",
+        pricingBiweeklyVip: gym.pricingBiweeklyVip || "",
         pricingGroupDefault: gym.pricingGroupDefault || "0",
         enrollmentFee: gym.enrollmentFee || "0",
         cardFee: gym.cardFee || "0",
         pricingDayPass: gym.pricingDayPass || "15",
+        pricingDayPassVip: gym.pricingDayPassVip || "",
         shiftAmStart: String(gym.shiftAmStart ?? 6),
         shiftAmEnd: String(gym.shiftAmEnd ?? 13),
         shiftPmStart: String(gym.shiftPmStart ?? 13),
@@ -54,15 +68,7 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
 
     try {
       const formData = new FormData();
-      formData.append("pricingMonthly", prices.pricingMonthly);
-      formData.append("pricingGroupDefault", prices.pricingGroupDefault);
-      formData.append("enrollmentFee", prices.enrollmentFee);
-      formData.append("cardFee", prices.cardFee);
-      formData.append("pricingDayPass", prices.pricingDayPass);
-      formData.append("shiftAmStart", prices.shiftAmStart);
-      formData.append("shiftAmEnd", prices.shiftAmEnd);
-      formData.append("shiftPmStart", prices.shiftPmStart);
-      formData.append("shiftPmEnd", prices.shiftPmEnd);
+      Object.entries(prices).forEach(([key, value]) => formData.append(key, value));
 
       await updateGymPricing(selectedGymId, formData);
       setSuccess(true);
@@ -95,45 +101,84 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          <div className="p-4 rounded-xl border border-olimpo-surface-light bg-olimpo-bg">
-            <h3 className="font-medium text-olimpo-gold mb-4">Membresía Base</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-olimpo-text-muted mb-1">Precio Mensual Individual (Q)</label>
-                <input 
-                  type="number" 
-                  name="pricingMonthly"
-                  value={prices.pricingMonthly}
-                  onChange={handleChange}
-                  min="0" step="0.01" required
-                  className="w-full px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm text-olimpo-text-muted mb-1">Precio Mensual Grupal por persona (Q)</label>
-                <input 
-                  type="number" 
-                  name="pricingGroupDefault"
-                  value={prices.pricingGroupDefault}
-                  onChange={handleChange}
-                  min="0" step="0.01" required
-                  className="w-full px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
-                />
-              </div>
+          <div className="p-4 rounded-xl border border-olimpo-surface-light bg-olimpo-bg md:col-span-2">
+            <h3 className="font-medium text-olimpo-gold mb-1">Matriz de Planes — Básico vs. VIP (4to. Nivel)</h3>
+            <p className="text-xs text-olimpo-text-muted mb-4">
+              Deja en blanco un campo VIP si esa sede aún no ofrece esa combinación.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-olimpo-text-muted uppercase tracking-wider">
+                    <th className="pb-2 pr-4">Plan</th>
+                    <th className="pb-2 pr-4">Básico (Q)</th>
+                    <th className="pb-2">VIP (Q)</th>
+                  </tr>
+                </thead>
+                <tbody className="align-top">
+                  {([
+                    ["Por visita / día", "pricingDayPass", "pricingDayPassVip"],
+                    ["Semanal (lun–sáb)", "pricingWeeklyBasico", "pricingWeeklyVip"],
+                    ["Quincenal (15 días)", "pricingBiweeklyBasico", "pricingBiweeklyVip"],
+                    ["Mensual", "pricingMonthly", "pricingMonthlyVip"],
+                  ] as const).map(([label, basicoKey, vipKey]) => (
+                    <tr key={label} className="border-t border-olimpo-surface-light/50">
+                      <td className="py-2 pr-4 text-olimpo-text font-medium whitespace-nowrap">{label}</td>
+                      <td className="py-2 pr-4">
+                        <input
+                          type="number"
+                          name={basicoKey}
+                          value={prices[basicoKey]}
+                          onChange={handleChange}
+                          min="0" step="0.01" required={basicoKey === "pricingMonthly" || basicoKey === "pricingDayPass"}
+                          className="w-28 px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
+                        />
+                      </td>
+                      <td className="py-2">
+                        <input
+                          type="number"
+                          name={vipKey}
+                          value={prices[vipKey]}
+                          onChange={handleChange}
+                          min="0" step="0.01"
+                          placeholder="—"
+                          className="w-28 px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t border-olimpo-surface-light/50">
+                    <td className="py-2 pr-4 text-olimpo-text font-medium whitespace-nowrap">
+                      Trimestral — Súper PROMO
+                      <p className="text-[11px] text-olimpo-text-muted font-normal">Solo existe en VIP (3 meses anticipados)</p>
+                    </td>
+                    <td className="py-2 pr-4 text-olimpo-text-muted">—</td>
+                    <td className="py-2">
+                      <input
+                        type="number"
+                        name="pricingQuarterly"
+                        value={prices.pricingQuarterly}
+                        onChange={handleChange}
+                        min="0" step="0.01"
+                        placeholder="—"
+                        className="w-28 px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           <div className="p-4 rounded-xl border border-olimpo-surface-light bg-olimpo-bg">
             <h3 className="font-medium text-olimpo-gold mb-4">Cargos Adicionales</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-olimpo-text-muted mb-1">Costo de Inscripción (Q)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   name="enrollmentFee"
                   value={prices.enrollmentFee}
                   onChange={handleChange}
@@ -145,8 +190,8 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
 
               <div>
                 <label className="block text-sm text-olimpo-text-muted mb-1">Costo de Carné (Q)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   name="cardFee"
                   value={prices.cardFee}
                   onChange={handleChange}
@@ -155,19 +200,22 @@ export function PricingForm({ gyms }: { gyms: any[] }) {
                 />
                 <p className="text-xs text-olimpo-text-muted mt-1">Si es 0, no se cobrará el carné.</p>
               </div>
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-sm text-olimpo-text-muted mb-1">Pago por Día (Q)</label>
-                <input
-                  type="number"
-                  name="pricingDayPass"
-                  value={prices.pricingDayPass}
-                  onChange={handleChange}
-                  min="0" step="0.01" required
-                  className="w-full px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
-                />
-                <p className="text-xs text-olimpo-text-muted mt-1">Lo que paga un visitante por entrenar un solo día en esta sede.</p>
-              </div>
+          <div className="p-4 rounded-xl border border-olimpo-surface-light bg-olimpo-bg">
+            <h3 className="font-medium text-olimpo-gold mb-4">Grupos</h3>
+            <div>
+              <label className="block text-sm text-olimpo-text-muted mb-1">Precio Mensual Grupal por persona (Q)</label>
+              <input
+                type="number"
+                name="pricingGroupDefault"
+                value={prices.pricingGroupDefault}
+                onChange={handleChange}
+                min="0" step="0.01" required
+                className="w-full px-3 py-2 bg-olimpo-surface border border-olimpo-surface-light rounded-lg text-olimpo-text focus:outline-none focus:border-olimpo-gold"
+              />
+              <p className="text-xs text-olimpo-text-muted mt-1">Sugerido para el PROMO 2 VIP (Q500 / 2 personas = Q250 c/u).</p>
             </div>
           </div>
 

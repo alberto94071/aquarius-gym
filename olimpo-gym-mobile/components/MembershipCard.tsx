@@ -6,6 +6,8 @@ import { StatusBadge } from "./StatusBadge";
 import type { Member } from "@/lib/types";
 
 const PLAN_DAYS: Record<string, number> = {
+  semanal: 7,
+  quincenal: 15,
   mensual: 30,
   trimestral: 90,
   anual: 365,
@@ -63,7 +65,14 @@ export function MembershipCard({ member }: { member: Member }) {
       <View style={styles.content}>
         {/* Plan + Status */}
         <View style={styles.topRow}>
-          <Text style={styles.planLabel}>{member.plan.toUpperCase()}</Text>
+          <View style={styles.planGroup}>
+            <Text style={styles.planLabel}>{member.plan.toUpperCase()}</Text>
+            <View style={[styles.levelBadge, member.accessLevel === "vip" && styles.levelBadgeVip]}>
+              <Text style={[styles.levelBadgeText, member.accessLevel === "vip" && styles.levelBadgeTextVip]}>
+                {member.accessLevel === "vip" ? "VIP · 4TO. NIVEL" : "BÁSICO"}
+              </Text>
+            </View>
+          </View>
           <StatusBadge status={member.status} size="sm" />
         </View>
 
@@ -138,12 +147,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
+  planGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   planLabel: {
     color: Colors.gold,
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 3,
     fontFamily: "Cinzel_700Bold",
+  },
+  levelBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    backgroundColor: "#2A2A2A",
+  },
+  levelBadgeVip: {
+    backgroundColor: Colors.gold,
+  },
+  levelBadgeText: {
+    color: Colors.dim,
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  levelBadgeTextVip: {
+    color: "#000",
   },
   daysRow: {
     flexDirection: "row",

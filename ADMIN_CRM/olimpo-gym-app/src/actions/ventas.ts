@@ -269,8 +269,8 @@ export async function getSalesSummary(gymFilter?: string) {
 
 // ─── Pago por día ────────────────────────────────────────────────────────────
 
-/** Cobra un día de gimnasio a un visitante sin membresía (precio de la sede) */
-export async function registerDayPass(data: { personName?: string; gymId?: string }) {
+/** Cobra un día de gimnasio a un visitante sin membresía (precio de la sede, básico o VIP) */
+export async function registerDayPass(data: { personName?: string; gymId?: string; accessLevel?: "basico" | "vip" }) {
   const user = await getCurrentUser();
   const gymId = isAdmin(user) ? (data.gymId ?? user.gymId) : user.gymId;
   if (!gymId) throw new Error("Selecciona una sede");
@@ -279,17 +279,20 @@ export async function registerDayPass(data: { personName?: string; gymId?: strin
   if (!gym) throw new Error("Sede no encontrada");
 
   const shift: Shift = user.shift ?? currentShiftByTime(gymHours(gym));
+  const accessLevel = data.accessLevel === "vip" ? "vip" : "basico";
+  const amount = accessLevel === "vip" && gym.pricingDayPassVip ? gym.pricingDayPassVip : gym.pricingDayPass;
 
   await db.insert(dayPasses).values({
     gymId,
     personName: data.personName || null,
-    amount: gym.pricingDayPass,
+    amount,
+    accessLevel,
     shift,
     soldBy: user.id,
   });
 
   revalidatePath("/ventas");
-  return { success: true, amount: gym.pricingDayPass };
+  return { success: true, amount };
 }
 
 /** Pagos por día de hoy (secretaria: solo su turno; admin: todos) */

@@ -65,6 +65,7 @@ export function VentasClient({
   const [showSaleModal, setShowSaleModal] = useState(false);
   const [showAbonoModal, setShowAbonoModal] = useState<Sale | null>(null);
   const [showClosureModal, setShowClosureModal] = useState(false);
+  const [showDayPassModal, setShowDayPassModal] = useState(false);
 
   // Refrescar cada minuto para que el contador del cuadre avance
   useEffect(() => {
@@ -170,15 +171,7 @@ export function VentasClient({
         ))}
         <div className="flex-1" />
         <button
-          onClick={() => {
-            const name = prompt("Pago por día — Nombre del visitante (opcional):");
-            if (name !== null) {
-              act(async () => {
-                const res = await registerDayPass({ personName: name || undefined });
-                alert(`✓ Pago por día registrado: Q${Number(res.amount).toFixed(2)}`);
-              });
-            }
-          }}
+          onClick={() => setShowDayPassModal(true)}
           className="px-4 py-2 rounded-lg border border-green-500/50 text-green-400 font-bold flex items-center gap-2 hover:bg-green-500/10">
           🎟️ Pago por día {dayPasses.items.length > 0 && `(hoy: ${dayPasses.items.length} · Q${dayPasses.total.toFixed(2)})`}
         </button>
@@ -384,6 +377,22 @@ export function VentasClient({
           onSave={async (amount, notes) => {
             const ok = await act(() => registerSaleAbono(showAbonoModal.id, amount, notes));
             if (ok) setShowAbonoModal(null);
+          }}
+        />
+      )}
+      {showDayPassModal && (
+        <DayPassModal
+          onClose={() => setShowDayPassModal(false)}
+          onSave={async (payload) => {
+            let amount: number | null = null;
+            const ok = await act(async () => {
+              const res = await registerDayPass(payload);
+              amount = Number(res.amount);
+            });
+            if (ok) {
+              setShowDayPassModal(false);
+              if (amount !== null) alert(`✓ Pago por día registrado: Q${(amount as number).toFixed(2)}`);
+            }
           }}
         />
       )}
@@ -616,6 +625,48 @@ function AbonoModal({ sale, onClose, onSave }: {
         <div>
           <label className={labelCls}>Nota (opcional)</label>
           <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} />
+        </div>
+        <ModalActions saving={saving} onClose={onClose} />
+      </form>
+    </Modal>
+  );
+}
+
+// ─── Modal: pago por día ──────────────────────────────────────────────────────
+
+function DayPassModal({ onClose, onSave }: {
+  onClose: () => void;
+  onSave: (payload: { personName?: string; accessLevel: "basico" | "vip" }) => Promise<void>;
+}) {
+  const [personName, setPersonName] = useState("");
+  const [accessLevel, setAccessLevel] = useState<"basico" | "vip">("basico");
+  const [saving, setSaving] = useState(false);
+
+  return (
+    <Modal title="Pago por día" onClose={onClose}>
+      <form className="space-y-3" onSubmit={async (e) => {
+        e.preventDefault(); setSaving(true);
+        await onSave({ personName: personName || undefined, accessLevel });
+        setSaving(false);
+      }}>
+        <div>
+          <label className={labelCls}>Nombre del visitante (opcional)</label>
+          <input autoFocus value={personName} onChange={(e) => setPersonName(e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Nivel de acceso</label>
+          <div className="grid grid-cols-2 gap-2">
+            {(["basico", "vip"] as const).map((lvl) => (
+              <button
+                key={lvl}
+                type="button"
+                onClick={() => setAccessLevel(lvl)}
+                className={`px-3 py-2 rounded-lg border font-bold text-sm ${accessLevel === lvl ? "bg-olimpo-gold text-black border-olimpo-gold" : "border-olimpo-surface-light text-olimpo-text-muted hover:bg-olimpo-surface-light/40"}`}
+              >
+                {lvl === "vip" ? "VIP (4to. nivel)" : "Básico"}
+              </button>
+            ))}
+          </div>
         </div>
         <ModalActions saving={saving} onClose={onClose} />
       </form>

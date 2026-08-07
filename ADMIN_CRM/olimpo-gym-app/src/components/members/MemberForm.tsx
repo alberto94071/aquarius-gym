@@ -5,20 +5,40 @@ import { useRouter } from "next/navigation";
 import { createMember } from "@/actions/members";
 import { Loader2, Calculator, Copy, CheckCircle, Info } from "lucide-react";
 import { PhotoUploader } from "@/components/ui/PhotoUploader";
-import { addMonthsAnniversary, planMonths } from "@/lib/utils";
+import { calculateMembershipEnd, type RealPlan } from "@/lib/utils";
 
 const MONTHS_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+const PLAN_LABELS: Record<RealPlan, string> = {
+  semanal: "Semanal (lunes a sábado)",
+  quincenal: "Quincenal (15 días corridos)",
+  mensual: "Mensual (aniversario de inscripción)",
+  trimestral: "Trimestral — Súper PROMO (solo VIP)",
+};
 
 function todayStr() {
   return new Date().toISOString().split("T")[0];
 }
 
-/** Vence el mismo día del mes de la inscripción (aniversario) */
-function calcEndDate(startStr: string, plan: string): string {
+/** Vence según la lógica real del negocio (semanal/quincenal/mensual/trimestral) */
+function calcEndDate(startStr: string, plan: RealPlan): string {
   if (!startStr) return "";
   const d = new Date(startStr + "T12:00:00");
-  const end = addMonthsAnniversary(d, planMonths(plan as "mensual" | "trimestral" | "anual"));
+  const end = calculateMembershipEnd(plan, d);
   return end.toISOString().split("T")[0];
+}
+
+/** Precio de un plan+nivel según los campos de precios de la sede */
+function priceFor(gym: any, plan: RealPlan, accessLevel: "basico" | "vip"): string {
+  if (!gym) return "0.00";
+  const map: Record<RealPlan, { basico: string | null; vip: string | null }> = {
+    semanal: { basico: gym.pricingWeeklyBasico, vip: gym.pricingWeeklyVip },
+    quincenal: { basico: gym.pricingBiweeklyBasico, vip: gym.pricingBiweeklyVip },
+    mensual: { basico: gym.pricingMonthly, vip: gym.pricingMonthlyVip },
+    trimestral: { basico: gym.pricingQuarterly, vip: gym.pricingQuarterly },
+  };
+  const val = map[plan][accessLevel];
+  return val != null ? String(val) : "0.00";
 }
 
 export function MemberForm({ userRole, gyms }: { userRole: string; gyms: any[] }) {
@@ -33,18 +53,30 @@ export function MemberForm({ userRole, gyms }: { userRole: string; gyms: any[] }
   const [enrollmentFee, setEnrollmentFee] = useState("0.00");
   const [cardFee, setCardFee] = useState("0.00");
   const [photoUrl, setPhotoUrl] = useState("");
-  const [plan, setPlan] = useState("mensual");
+  const [plan, setPlan] = useState<RealPlan>("mensual");
+  const [accessLevel, setAccessLevel] = useState<"basico" | "vip">("basico");
   const [membershipStart, setMembershipStart] = useState(todayStr());
   const [isPastMonth, setIsPastMonth] = useState(false);
+  const [priceEdited, setPriceEdited] = useState(false);
+
+  const currentGym = gyms.find((g) => g.id === gymId);
 
   useEffect(() => {
-    const gym = gyms.find((g) => g.id === gymId);
-    if (gym) {
-      setPrice(gym.pricingMonthly || "150.00");
-      setEnrollmentFee(gym.enrollmentFee || "0.00");
-      setCardFee(gym.cardFee || "0.00");
-    }
-  }, [gymId, gyms]);
+    setPriceEdited(false);
+    setEnrollmentFee(currentGym?.enrollmentFee || "0.00");
+    setCardFee(currentGym?.cardFee || "0.00");
+  }, [gymId]);
+
+  // Si eligen trimestral, solo existe en VIP (Súper PROMO)
+  useEffect(() => {
+    if (plan === "trimestral" && accessLevel !== "vip") setAccessLevel("vip");
+  }, [plan]);
+
+  // Auto-rellena el precio según sede + plan + nivel, salvo que el admin lo edite a mano
+  useEffect(() => {
+    if (priceEdited) return;
+    setPrice(priceFor(currentGym, plan, accessLevel));
+  }, [gymId, plan, accessLevel, priceEdited]);
 
   useEffect(() => {
     if (!membershipStart) return;
@@ -262,36 +294,68 @@ export function MemberForm({ userRole, gyms }: { userRole: string; gyms: any[] }
           Membresía y Cobros
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Plan *</label>
             <select
               name="plan"
               value={plan}
-              onChange={(e) => setPlan(e.target.value)}
+              onChange={(e) => setPlan(e.target.value as RealPlan)}
               required
               className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold transition-colors"
             >
-              <option value="mensual">Mensual (Mes Calendario)</option>
-              <option value="trimestral">Trimestral</option>
-              <option value="anual">Anual</option>
+              {(Object.keys(PLAN_LABELS) as RealPlan[]).map((p) => (
+                <option key={p} value={p}>{PLAN_LABELS[p]}</option>
+              ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-olimpo-text-muted mb-1">
-              Mes de inicio de membresía *
-              <span className="ml-1 text-olimpo-gold text-xs">(puede ser un mes pasado)</span>
-            </label>
-            <input
-              type="month"
-              value={membershipStart ? membershipStart.substring(0, 7) : ""}
-              onChange={(e) => {
-                // Convert YYYY-MM to YYYY-MM-01
-                setMembershipStart(e.target.value ? e.target.value + "-01" : todayStr());
-              }}
+            <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Nivel de acceso *</label>
+            <select
+              name="accessLevel"
+              value={accessLevel}
+              onChange={(e) => setAccessLevel(e.target.value as "basico" | "vip")}
               required
-              className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold transition-colors"
-            />
+              disabled={plan === "trimestral"}
+              className={`w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold transition-colors ${plan === "trimestral" ? "opacity-70 cursor-not-allowed" : ""}`}
+            >
+              <option value="basico">Básico</option>
+              <option value="vip">VIP (área 4to. nivel)</option>
+            </select>
+            {plan === "trimestral" && (
+              <p className="mt-1 text-xs text-olimpo-gold">El plan trimestral solo existe en VIP.</p>
+            )}
+          </div>
+          <div>
+            {plan === "mensual" || plan === "trimestral" ? (
+              <>
+                <label className="block text-sm font-medium text-olimpo-text-muted mb-1">
+                  Mes de inicio de membresía *
+                  <span className="ml-1 text-olimpo-gold text-xs">(puede ser un mes pasado)</span>
+                </label>
+                <input
+                  type="month"
+                  value={membershipStart ? membershipStart.substring(0, 7) : ""}
+                  onChange={(e) => {
+                    // Convert YYYY-MM to YYYY-MM-01
+                    setMembershipStart(e.target.value ? e.target.value + "-01" : todayStr());
+                  }}
+                  required
+                  className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold transition-colors"
+                />
+              </>
+            ) : (
+              <>
+                <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Fecha de inicio *</label>
+                <input
+                  type="date"
+                  value={membershipStart}
+                  onChange={(e) => setMembershipStart(e.target.value || todayStr())}
+                  required
+                  className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold transition-colors"
+                />
+              </>
+            )}
           </div>
         </div>
 
@@ -331,7 +395,10 @@ export function MemberForm({ userRole, gyms }: { userRole: string; gyms: any[] }
               step="0.01"
               name="price"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                setPriceEdited(true);
+              }}
               readOnly={isReadOnly}
               className={`w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold ${isReadOnly ? "opacity-70 cursor-not-allowed" : ""}`}
             />

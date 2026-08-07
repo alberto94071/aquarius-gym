@@ -17,9 +17,45 @@ export function addMonthsAnniversary(date: Date, months: number): Date {
   return anniversaryDate(date.getFullYear(), date.getMonth() + months, date.getDate());
 }
 
-/** Meses que cubre cada plan. */
-export function planMonths(plan: "mensual" | "trimestral" | "anual"): number {
-  return plan === "mensual" ? 1 : plan === "trimestral" ? 3 : 12;
+export type RealPlan = "semanal" | "quincenal" | "mensual" | "trimestral";
+
+/**
+ * Sábado de la semana (lunes-sábado) que contiene `date`.
+ * Regla del negocio: "los planes semanales inician lunes y vencen sábado" —
+ * si te inscribes a mitad de semana, tu primera semana es más corta y vence
+ * el sábado de esa misma semana calendario.
+ */
+export function weeklyPlanEnd(date: Date): Date {
+  const day = date.getDay(); // 0=domingo ... 6=sábado
+  const daysToSaturday = (6 - day + 7) % 7;
+  const end = new Date(date);
+  end.setDate(end.getDate() + daysToSaturday);
+  return end;
+}
+
+/** Suma días corridos (plan quincenal: 15 días desde la inscripción). */
+export function addDaysPlain(date: Date, days: number): Date {
+  const end = new Date(date);
+  end.setDate(end.getDate() + days);
+  return end;
+}
+
+/**
+ * Fecha de vencimiento según el plan real del negocio, a partir de la fecha
+ * de inicio. Semanal y quincenal usan ciclos cortos; mensual y trimestral
+ * usan el aniversario del día de inscripción.
+ */
+export function calculateMembershipEnd(plan: RealPlan, startDate: Date): Date {
+  switch (plan) {
+    case "semanal":
+      return weeklyPlanEnd(startDate);
+    case "quincenal":
+      return addDaysPlain(startDate, 15);
+    case "mensual":
+      return addMonthsAnniversary(startDate, 1);
+    case "trimestral":
+      return addMonthsAnniversary(startDate, 3);
+  }
 }
 
 export function calculateMemberStatus(membershipEndStr: string): "activo" | "mora" {

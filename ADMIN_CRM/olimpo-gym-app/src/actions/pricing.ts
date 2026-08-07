@@ -19,6 +19,19 @@ export async function updateGymPricing(gymId: string, formData: FormData) {
   const cardFee = formData.get("cardFee") as string;
   const pricingDayPass = formData.get("pricingDayPass") as string;
 
+  // Nivel VIP (área 4to. nivel) y ciclos cortos (semanal/quincenal) — opcionales
+  const optional = (name: string) => {
+    const v = formData.get(name) as string;
+    return v && v.trim() !== "" ? v : null;
+  };
+  const pricingMonthlyVip = optional("pricingMonthlyVip");
+  const pricingQuarterly = optional("pricingQuarterly");
+  const pricingWeeklyBasico = optional("pricingWeeklyBasico");
+  const pricingWeeklyVip = optional("pricingWeeklyVip");
+  const pricingBiweeklyBasico = optional("pricingBiweeklyBasico");
+  const pricingBiweeklyVip = optional("pricingBiweeklyVip");
+  const pricingDayPassVip = optional("pricingDayPassVip");
+
   // Horarios de turnos de la sede (hora 0-23)
   const hour = (name: string, fallback: number) => {
     const v = parseInt(formData.get(name) as string);
@@ -35,10 +48,17 @@ export async function updateGymPricing(gymId: string, formData: FormData) {
   await db.update(gyms)
     .set({
       pricingMonthly,
+      pricingMonthlyVip,
+      pricingQuarterly,
+      pricingWeeklyBasico,
+      pricingWeeklyVip,
+      pricingBiweeklyBasico,
+      pricingBiweeklyVip,
       pricingGroupDefault,
       enrollmentFee,
       cardFee,
       ...(pricingDayPass ? { pricingDayPass } : {}),
+      pricingDayPassVip,
       shiftAmStart,
       shiftAmEnd,
       shiftPmStart,

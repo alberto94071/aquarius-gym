@@ -1,10 +1,10 @@
 "use server";
 
 import { db } from "@/db";
-import { members, gyms, systemUsers, payments, pushSubscriptions, memberNotifications, memberRoutines, workoutSessions, bodyMeasurements } from "@/db/schema";
+import { members, gyms, systemUsers, payments, pushSubscriptions, memberNotifications, memberRoutines, workoutSessions, bodyMeasurements, memberPauses } from "@/db/schema";
 import { eq, desc, ilike, or, and, sql } from "drizzle-orm";
 import { auth } from "@/auth";
-import { calculateMemberStatus, addMonthsAnniversary, planMonths } from "@/lib/utils";
+import { calculateMemberStatus, calculateMembershipEnd, type RealPlan } from "@/lib/utils";
 import { syncMembersStatus } from "@/lib/sync";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -40,14 +40,19 @@ export async function createMember(formData: FormData) {
   const seqStr = String(gym.nextMemberSeq).padStart(4, '0');
   const memberCode = `${gym.codePrefix}-${groupStr}-${seqStr}`;
 
-  const plan = formData.get("plan") as "mensual" | "trimestral" | "anual";
+  const plan = formData.get("plan") as RealPlan;
+  const accessLevel = (formData.get("accessLevel") as "basico" | "vip") || "basico";
+
+  // El plan trimestral ("Súper PROMO VIP") solo existe en nivel VIP
+  if (plan === "trimestral" && accessLevel !== "vip") {
+    throw new Error("El plan trimestral solo está disponible en nivel VIP");
+  }
 
   // Allow custom start date (for registering past months)
   const startDateStr = formData.get("membershipStart") as string;
   const startDate = startDateStr ? new Date(startDateStr + "T12:00:00") : new Date();
 
-  // Vence el mismo día del mes en que se inscribió (aniversario)
-  const endDate = addMonthsAnniversary(startDate, planMonths(plan));
+  const endDate = calculateMembershipEnd(plan, startDate);
 
   const price = formData.get("price") as string;
   const enrollmentFee = formData.get("enrollmentFee") as string || "0";
@@ -68,6 +73,7 @@ export async function createMember(formData: FormData) {
     birthDate: formData.get("birthDate") as string,
     sex: formData.get("sex") as "M" | "F",
     plan: plan,
+    accessLevel: accessLevel,
     price: price,
     membershipStart: startDate.toISOString().split("T")[0],
     membershipEnd: endDate.toISOString().split("T")[0],
@@ -229,12 +235,17 @@ export async function updateMember(id: string, formData: FormData) {
 
   // Financial/membership fields — admin only
   if (currentUser.role === "admin") {
-    const plan = formData.get("plan") as "mensual" | "trimestral" | "anual";
+    const plan = formData.get("plan") as RealPlan;
+    const accessLevel = (formData.get("accessLevel") as "basico" | "vip") || "basico";
+    if (plan === "trimestral" && accessLevel !== "vip") {
+      throw new Error("El plan trimestral solo está disponible en nivel VIP");
+    }
     const price = formData.get("price") as string;
     const start = formData.get("membershipStart") as string;
     const end = formData.get("membershipEnd") as string;
 
     baseFields.plan = plan;
+    baseFields.accessLevel = accessLevel;
     baseFields.price = price;
     baseFields.membershipStart = start;
     baseFields.membershipEnd = end;
@@ -299,6 +310,77 @@ export async function deleteMember(memberId: string) {
   revalidatePath("/members");
   revalidatePath("/dashboard");
   redirect("/members");
+}
+
+/**
+ * "No se repone tiempo, a menos que avise con causa justificada" — este es
+ * el botón que registra esa excepción: extiende el vencimiento del miembro
+ * por los días pausados, con motivo (y comprobante opcional) en el historial.
+ */
+export async function pauseMembership(data: {
+  memberId: string;
+  days: number;
+  reason: string;
+  proofUrl?: string;
+}) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autorizado");
+  const [currentUser] = await db.select().from(systemUsers).where(eq(systemUsers.email, session.user.email!));
+
+  if (!data.reason.trim()) throw new Error("El motivo es obligatorio");
+  if (!Number.isFinite(data.days) || data.days <= 0 || data.days > 90) {
+    throw new Error("Los días deben ser un número entre 1 y 90");
+  }
+
+  const [member] = await db.select().from(members).where(eq(members.id, data.memberId));
+  if (!member) throw new Error("Miembro no encontrado");
+  if (currentUser.role !== "admin" && member.gymId !== currentUser.gymId) {
+    throw new Error("No tienes permiso sobre este miembro");
+  }
+
+  const previousEnd = member.membershipEnd;
+  const newEndDate = new Date(previousEnd + "T12:00:00");
+  newEndDate.setDate(newEndDate.getDate() + data.days);
+  const newEnd = newEndDate.toISOString().split("T")[0];
+
+  await db.transaction(async (tx) => {
+    await tx.insert(memberPauses).values({
+      memberId: data.memberId,
+      days: data.days,
+      reason: data.reason,
+      proofUrl: data.proofUrl || null,
+      previousEnd,
+      newEnd,
+      registeredBy: currentUser.id,
+    });
+    await tx.update(members)
+      .set({ membershipEnd: newEnd, status: calculateMemberStatus(newEnd) })
+      .where(eq(members.id, data.memberId));
+  });
+
+  revalidatePath(`/members/${data.memberId}`);
+  return { success: true, newEnd };
+}
+
+export async function getMemberPauses(memberId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("No autorizado");
+
+  return db
+    .select({
+      id: memberPauses.id,
+      days: memberPauses.days,
+      reason: memberPauses.reason,
+      proofUrl: memberPauses.proofUrl,
+      previousEnd: memberPauses.previousEnd,
+      newEnd: memberPauses.newEnd,
+      createdAt: memberPauses.createdAt,
+      registeredByName: systemUsers.name,
+    })
+    .from(memberPauses)
+    .leftJoin(systemUsers, eq(memberPauses.registeredBy, systemUsers.id))
+    .where(eq(memberPauses.memberId, memberId))
+    .orderBy(desc(memberPauses.createdAt));
 }
 
 export async function updateMemberPhoto(id: string, photoUrl: string) {

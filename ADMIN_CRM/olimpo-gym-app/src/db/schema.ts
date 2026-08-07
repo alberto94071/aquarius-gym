@@ -20,7 +20,11 @@ export const roleEnum = pgEnum("role", ["admin", "secretaria", "secretaria_rb", 
 // Turno del personal: mañana o tarde
 export const shiftEnum = pgEnum("shift", ["am", "pm"]);
 export const sexEnum = pgEnum("sex", ["M", "F"]);
-export const planEnum = pgEnum("plan", ["mensual", "trimestral", "anual"]);
+// "anual" se conserva en el enum por compatibilidad pero ya no se ofrece
+// (el negocio no maneja plan anual); los planes reales son estos 4.
+export const planEnum = pgEnum("plan", ["semanal", "quincenal", "mensual", "trimestral", "anual"]);
+// Nivel de acceso: básico o VIP (incluye el área del 4to. nivel)
+export const accessLevelEnum = pgEnum("access_level", ["basico", "vip"]);
 export const statusEnum = pgEnum("status", ["activo", "mora", "vencido", "bloqueado"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["efectivo", "transferencia"]);
 export const notificationTypeEnum = pgEnum("notification_type", [
@@ -42,13 +46,24 @@ export const gyms = pgTable("gyms", {
   phone: varchar("phone", { length: 50 }),
   schedule: text("schedule"),
   photoUrl: varchar("photo_url", { length: 1024 }),
-  pricingMonthly: decimal("pricing_monthly", { precision: 10, scale: 2 }).notNull(),
+  // Mensual — básico y VIP (área 4to. nivel)
+  pricingMonthly: decimal("pricing_monthly", { precision: 10, scale: 2 }).notNull(), // básico
+  pricingMonthlyVip: decimal("pricing_monthly_vip", { precision: 10, scale: 2 }),
+  // Trimestral — SOLO existe en VIP ("Súper PROMO VIP", 3 meses anticipados)
   pricingQuarterly: decimal("pricing_quarterly", { precision: 10, scale: 2 }),
-  pricingAnnual: decimal("pricing_annual", { precision: 10, scale: 2 }),
+  pricingAnnual: decimal("pricing_annual", { precision: 10, scale: 2 }), // sin uso; el negocio no ofrece plan anual
+  // Semanal (inicia lunes, vence sábado) — básico y VIP
+  pricingWeeklyBasico: decimal("pricing_weekly_basico", { precision: 10, scale: 2 }),
+  pricingWeeklyVip: decimal("pricing_weekly_vip", { precision: 10, scale: 2 }),
+  // Quincenal (15 días corridos desde la inscripción) — básico y VIP
+  pricingBiweeklyBasico: decimal("pricing_biweekly_basico", { precision: 10, scale: 2 }),
+  pricingBiweeklyVip: decimal("pricing_biweekly_vip", { precision: 10, scale: 2 }),
   pricingGroupDefault: decimal("pricing_group_default", { precision: 10, scale: 2 }).notNull(),
   enrollmentFee: decimal("enrollment_fee", { precision: 10, scale: 2 }).default("0").notNull(),
   cardFee: decimal("card_fee", { precision: 10, scale: 2 }).default("0").notNull(),
-  pricingDayPass: decimal("pricing_day_pass", { precision: 10, scale: 2 }).default("15").notNull(), // pago por día
+  // Pago por visita/sesión (sin membresía) — básico y VIP
+  pricingDayPass: decimal("pricing_day_pass", { precision: 10, scale: 2 }).default("15").notNull(), // básico
+  pricingDayPassVip: decimal("pricing_day_pass_vip", { precision: 10, scale: 2 }),
   // Horarios de turnos de ESTA sede (hora 0-23, configurables por el admin)
   shiftAmStart: integer("shift_am_start").default(6).notNull(),
   shiftAmEnd: integer("shift_am_end").default(13).notNull(),
@@ -107,6 +122,7 @@ export const members = pgTable("members", {
   birthDate: date("birth_date").notNull(),
   sex: sexEnum("sex").notNull(),
   plan: planEnum("plan").notNull(),
+  accessLevel: accessLevelEnum("access_level").default("basico").notNull(), // básico o VIP (4to. nivel)
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   membershipStart: date("membership_start").notNull(),
   membershipEnd: date("membership_end").notNull(),
@@ -361,8 +377,24 @@ export const dayPasses = pgTable("day_passes", {
   gymId: uuid("gym_id").references(() => gyms.id).notNull(),
   personName: varchar("person_name", { length: 255 }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  accessLevel: accessLevelEnum("access_level").default("basico").notNull(),
   shift: shiftEnum("shift"),
   soldBy: uuid("sold_by").references(() => systemUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Pausas de membresía ("no se repone tiempo, salvo aviso con causa justificada").
+// Extienden membershipEnd por los días pausados; queda el motivo y comprobante
+// (ej. receta médica) en el historial.
+export const memberPauses = pgTable("member_pauses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  memberId: uuid("member_id").references(() => members.id).notNull(),
+  days: integer("days").notNull(),
+  reason: text("reason").notNull(),
+  proofUrl: varchar("proof_url", { length: 1024 }), // foto opcional del comprobante/receta
+  previousEnd: date("previous_end").notNull(),
+  newEnd: date("new_end").notNull(),
+  registeredBy: uuid("registered_by").references(() => systemUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

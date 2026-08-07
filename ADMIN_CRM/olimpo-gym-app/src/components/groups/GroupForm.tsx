@@ -15,6 +15,8 @@ export function GroupForm({ userRole, gyms }: { userRole: string, gyms: any[] })
   const [enrollmentFee, setEnrollmentFee] = useState("0.00");
   const [cardFee, setCardFee] = useState("0.00");
   const [paidFull, setPaidFull] = useState(true);
+  const [plan, setPlan] = useState<"semanal" | "quincenal" | "mensual" | "trimestral">("mensual");
+  const [accessLevel, setAccessLevel] = useState<"basico" | "vip">("vip");
 
   // Initial state: 1 Representative + 1 extra member
   const [members, setMembers] = useState([
@@ -31,6 +33,11 @@ export function GroupForm({ userRole, gyms }: { userRole: string, gyms: any[] })
       setCardFee(gym.cardFee || "0.00");
     }
   }, [gymId, gyms]);
+
+  // El plan trimestral ("Súper PROMO") solo existe en VIP
+  useEffect(() => {
+    if (plan === "trimestral" && accessLevel !== "vip") setAccessLevel("vip");
+  }, [plan]);
 
   const isReadOnly = userRole !== "admin";
   const perPersonTotal = Number(pricePerPerson) + Number(enrollmentFee) + Number(cardFee);
@@ -62,12 +69,14 @@ export function GroupForm({ userRole, gyms }: { userRole: string, gyms: any[] })
     }
 
     try {
-      const groupData = { 
-        pricePerPerson, 
+      const groupData = {
+        pricePerPerson,
         enrollmentFee,
         cardFee,
-        paidFull, 
-        notes: "" 
+        paidFull,
+        plan,
+        accessLevel,
+        notes: ""
       };
       const res = await createGroup(gymId, groupData, members);
       if (res.success) {
@@ -96,7 +105,7 @@ export function GroupForm({ userRole, gyms }: { userRole: string, gyms: any[] })
           Configuración y Cobros del Grupo
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           {userRole === "admin" && (
             <div className="md:col-span-1">
               <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Sede *</label>
@@ -105,7 +114,33 @@ export function GroupForm({ userRole, gyms }: { userRole: string, gyms: any[] })
               </select>
             </div>
           )}
-          
+
+          <div>
+            <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Plan *</label>
+            <select value={plan} onChange={(e) => setPlan(e.target.value as typeof plan)} required className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold">
+              <option value="semanal">Semanal</option>
+              <option value="quincenal">Quincenal</option>
+              <option value="mensual">Mensual (ej. PROMO 2 VIP)</option>
+              <option value="trimestral">Trimestral (solo VIP)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Nivel de acceso *</label>
+            <select
+              value={accessLevel}
+              onChange={(e) => setAccessLevel(e.target.value as "basico" | "vip")}
+              required
+              disabled={plan === "trimestral"}
+              className={`w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold ${plan === "trimestral" ? "opacity-70 cursor-not-allowed" : ""}`}
+            >
+              <option value="basico">Básico</option>
+              <option value="vip">VIP (área 4to. nivel)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-olimpo-text-muted mb-1">Mensualidad x Persona (Q) *</label>
             <input type="number" step="0.01" value={pricePerPerson} onChange={(e) => setPricePerPerson(e.target.value)} readOnly={isReadOnly} required className={`w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-4 py-2 text-olimpo-text focus:outline-none focus:border-olimpo-gold ${isReadOnly ? 'opacity-70 cursor-not-allowed' : ''}`} />

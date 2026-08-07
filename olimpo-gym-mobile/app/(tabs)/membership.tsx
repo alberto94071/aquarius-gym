@@ -155,6 +155,7 @@ export default function MembershipScreen() {
         <Text style={styles.sectionLabel}>DETALLES DEL PLAN</Text>
         <View style={styles.detailCard}>
           <Row label="Plan" value={member.plan.charAt(0).toUpperCase() + member.plan.slice(1)} />
+          <Row label="Nivel de acceso" value={member.accessLevel === "vip" ? "VIP · 4to. Nivel" : "Básico"} />
           <Row label="Precio" value={`Q${parseFloat(member.price).toFixed(2)}`} />
           <Row label="Sede" value={member.gym.name ?? "—"} />
           <Row label="Inicio" value={formatDate(member.membershipStart)} />

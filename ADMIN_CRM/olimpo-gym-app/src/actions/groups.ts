@@ -5,7 +5,7 @@ import { members, gyms, systemUsers, groups, payments } from "@/db/schema";
 import { eq, desc, sql, and, or } from "drizzle-orm";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { calculateMemberStatus, addMonthsAnniversary, planMonths } from "@/lib/utils";
+import { calculateMemberStatus, calculateMembershipEnd, type RealPlan } from "@/lib/utils";
 import { syncMembersStatus } from "@/lib/sync";
 
 export async function createGroup(gymId: string, groupData: any, groupMembers: any[]) {
@@ -37,10 +37,14 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
 
     // 2. Insert members
     const startDate = new Date();
-    const plan = groupData.plan as "mensual" | "trimestral" | "anual";
+    const plan = groupData.plan as RealPlan;
+    const accessLevel = (groupData.accessLevel === "vip" ? "vip" : "basico") as "basico" | "vip";
 
-    // Vence el mismo día del mes en que se inscribió (aniversario)
-    const endDate = addMonthsAnniversary(startDate, planMonths(plan));
+    if (plan === "trimestral" && accessLevel !== "vip") {
+      throw new Error("El plan trimestral solo está disponible en el nivel VIP");
+    }
+
+    const endDate = calculateMembershipEnd(plan, startDate);
 
     const isPaid = groupData.paid === "true";
     const paymentMethod = groupData.paymentMethod || null;
@@ -79,6 +83,7 @@ export async function createGroup(gymId: string, groupData: any, groupMembers: a
         birthDate: m.birthDate,
         sex: m.sex,
         plan: plan,
+        accessLevel: accessLevel,
         price: m.price.toString(),
         membershipStart: startDate.toISOString().split("T")[0],
         membershipEnd: endDateStr,

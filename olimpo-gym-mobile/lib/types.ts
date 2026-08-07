@@ -1,5 +1,6 @@
 export type MemberStatus = "activo" | "mora" | "vencido" | "bloqueado";
-export type Plan = "mensual" | "trimestral" | "anual";
+export type Plan = "semanal" | "quincenal" | "mensual" | "trimestral" | "anual";
+export type AccessLevel = "basico" | "vip";
 export type MuscleGroup = "pecho" | "espalda" | "hombros" | "biceps" | "triceps" | "piernas" | "gluteos" | "core" | "cardio" | "full_body";
 
 export interface Gym {
@@ -40,6 +41,7 @@ export interface Member {
   photoUrl?: string | null;
   gym: Gym;
   plan: Plan;
+  accessLevel: AccessLevel;
   price: string;
   membershipStart: string;
   membershipEnd: string;

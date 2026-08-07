@@ -13,7 +13,8 @@ interface Props {
     email: string;
     birthDate: string;
     sex: "M" | "F";
-    plan: "mensual" | "trimestral" | "anual";
+    plan: "semanal" | "quincenal" | "mensual" | "trimestral" | "anual";
+    accessLevel: "basico" | "vip";
     price: string;
     membershipStart: string;
     membershipEnd: string;
@@ -35,6 +36,8 @@ export function EditMemberModal({ member, userRole }: Props) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [plan, setPlan] = useState(member.plan);
+  const [accessLevel, setAccessLevel] = useState(member.accessLevel);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -130,11 +133,26 @@ export function EditMemberModal({ member, userRole }: Props) {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs text-olimpo-text-muted mb-1">Plan *</label>
-                        <select name="plan" required defaultValue={member.plan}
+                        <select name="plan" required value={plan}
+                          onChange={(e) => {
+                            const p = e.target.value as typeof plan;
+                            setPlan(p);
+                            if (p === "trimestral") setAccessLevel("vip");
+                          }}
                           className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2.5 text-olimpo-text focus:outline-none focus:border-olimpo-gold text-sm transition-colors">
+                          <option value="semanal">Semanal</option>
+                          <option value="quincenal">Quincenal</option>
                           <option value="mensual">Mensual</option>
-                          <option value="trimestral">Trimestral</option>
-                          <option value="anual">Anual</option>
+                          <option value="trimestral">Trimestral (solo VIP)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-olimpo-text-muted mb-1">Nivel de acceso *</label>
+                        <select name="accessLevel" required value={accessLevel} disabled={plan === "trimestral"}
+                          onChange={(e) => setAccessLevel(e.target.value as typeof accessLevel)}
+                          className={`w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2.5 text-olimpo-text focus:outline-none focus:border-olimpo-gold text-sm transition-colors ${plan === "trimestral" ? "opacity-70 cursor-not-allowed" : ""}`}>
+                          <option value="basico">Básico</option>
+                          <option value="vip">VIP</option>
                         </select>
                       </div>
                       <div>
@@ -158,6 +176,7 @@ export function EditMemberModal({ member, userRole }: Props) {
                   /* Hidden inputs so server action receives the unchanged values */
                   <>
                     <input type="hidden" name="plan" value={member.plan} />
+                    <input type="hidden" name="accessLevel" value={member.accessLevel} />
                     <input type="hidden" name="price" value={member.price} />
                     <input type="hidden" name="membershipStart" value={member.membershipStart} />
                     <input type="hidden" name="membershipEnd" value={member.membershipEnd} />

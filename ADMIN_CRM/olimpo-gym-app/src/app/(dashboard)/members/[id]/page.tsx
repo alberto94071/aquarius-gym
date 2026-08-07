@@ -1,4 +1,4 @@
-import { getMemberById } from "@/actions/members";
+import { getMemberById, getMemberPauses } from "@/actions/members";
 
 const MONTHS_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MONTHS_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -40,6 +40,7 @@ import { MemberQR } from "@/components/members/MemberQR";
 import { RegisterPaymentModal } from "@/components/members/RegisterPaymentModal";
 import { AssignRoutineModal } from "@/components/members/AssignRoutineModal";
 import { EditMemberModal } from "@/components/members/EditMemberModal";
+import { PauseMembershipModal } from "@/components/members/PauseMembershipModal";
 import { DeleteMemberButton } from "@/components/members/DeleteMemberButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -56,10 +57,11 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
   const [currentUserRow] = await db.select().from(systemUsers).where(eq(systemUsers.email, session!.user!.email!));
   const userRole = currentUserRow?.role ?? "coach";
 
-  const [member, activeRoutine, allRoutines] = await Promise.all([
+  const [member, activeRoutine, allRoutines, pauses] = await Promise.all([
     getMemberById(id),
     getMemberActiveRoutine(id),
     getRoutines(),
+    getMemberPauses(id),
   ]);
 
   if (!member) notFound();
@@ -75,6 +77,7 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
         </Link>
         <div className="flex flex-wrap items-center gap-2">
           <EditMemberModal member={member} userRole={userRole} />
+          <PauseMembershipModal memberId={id} currentEnd={member.membershipEnd} />
           {userRole === "admin" && (
             <DeleteMemberButton memberId={id} memberName={member.name} />
           )}
@@ -99,6 +102,9 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
             <h2 className="text-3xl font-serif font-bold text-olimpo-gold">{member.name}</h2>
             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${isActive ? "bg-olimpo-green/20 text-olimpo-green" : isMora ? "bg-olimpo-red/20 text-olimpo-red" : "bg-olimpo-surface-light text-olimpo-text-muted"}`}>
               {member.status}
+            </span>
+            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${member.accessLevel === "vip" ? "bg-olimpo-gold/20 text-olimpo-gold" : "bg-olimpo-surface-light text-olimpo-text-muted"}`}>
+              {member.accessLevel === "vip" ? "VIP · 4to. Nivel" : "Básico"}
             </span>
           </div>
           <p className="text-olimpo-text-muted mt-2 flex items-center justify-center md:justify-start gap-2">
@@ -328,6 +334,55 @@ export default async function MemberDetailsPage({ params }: { params: Promise<{ 
           )}
         </div>
       </div>
+
+      {/* Pause History */}
+      {pauses.length > 0 && (
+        <div className="card-olimpo rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-olimpo-surface-light">
+            <h3 className="text-lg font-serif font-bold text-olimpo-text flex items-center gap-2">
+              <Clock className="w-5 h-5 text-olimpo-gold" /> Historial de Pausas
+            </h3>
+          </div>
+          <div className="p-0 overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-olimpo-surface-light/30 border-b border-olimpo-surface-light">
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Fecha</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Días</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Motivo</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Vencimiento anterior → nuevo</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Registrado por</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider">Comprobante</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-olimpo-surface-light">
+                {pauses.map((p) => (
+                  <tr key={p.id} className="hover:bg-olimpo-surface-light/10 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {new Date(p.createdAt).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-olimpo-gold">{p.days}</td>
+                    <td className="px-6 py-4 text-sm text-olimpo-text-muted max-w-xs">{p.reason}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {new Date(p.previousEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}
+                      {" → "}
+                      <span className="text-olimpo-green font-medium">{new Date(p.newEnd + "T00:00:00").toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })}</span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-olimpo-text-muted">{p.registeredByName || "—"}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {p.proofUrl ? (
+                        <a href={p.proofUrl} target="_blank" rel="noopener noreferrer" className="text-olimpo-gold hover:underline">Ver</a>
+                      ) : (
+                        <span className="text-olimpo-text-muted">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
