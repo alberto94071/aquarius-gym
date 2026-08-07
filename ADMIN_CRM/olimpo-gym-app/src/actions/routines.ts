@@ -46,6 +46,7 @@ export async function getRoutineById(id: string) {
 }
 
 export async function createRoutine(data: {
+  gymId?: string;
   name: string;
   description?: string;
   dayLabel?: string;
@@ -59,10 +60,15 @@ export async function createRoutine(data: {
     .from(systemUsers)
     .where(eq(systemUsers.email, session.user.email!));
 
+  // Los admins no están atados a una sede (gymId null) y deben elegir a
+  // cuál sede pertenece la rutina; el resto de roles usa su propia sede.
+  const targetGymId = currentUser.role === "admin" ? data.gymId : currentUser.gymId!;
+  if (!targetGymId) throw new Error("Selecciona una sede para la rutina");
+
   const [routine] = await db
     .insert(routines)
     .values({
-      gymId: currentUser.gymId!,
+      gymId: targetGymId,
       name: data.name,
       description: data.description || null,
       dayLabel: data.dayLabel || null,

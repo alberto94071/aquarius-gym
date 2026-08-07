@@ -31,12 +31,22 @@ const MUSCLE_LABELS: Record<string, string> = {
   gluteos: "Glúteos", core: "Core", cardio: "Cardio", full_body: "Cuerpo completo",
 };
 
-export function NewRoutineClient({ exercises }: { exercises: Exercise[] }) {
+interface Gym { id: string; name: string }
+
+export function NewRoutineClient({
+  exercises, userRole, gyms,
+}: {
+  exercises: Exercise[];
+  userRole: string;
+  gyms: Gym[];
+}) {
   const router = useRouter();
+  const isAdmin = userRole === "admin";
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [dayLabel, setDayLabel] = useState("");
+  const [gymId, setGymId] = useState(gyms[0]?.id || "");
   const [selected, setSelected] = useState<SelectedExercise[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
@@ -65,11 +75,13 @@ export function NewRoutineClient({ exercises }: { exercises: Exercise[] }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError("El nombre es obligatorio."); return; }
+    if (isAdmin && !gymId) { setError("Selecciona una sede."); return; }
     if (selected.length === 0) { setError("Agrega al menos un ejercicio."); return; }
     setError("");
     startTransition(async () => {
       try {
         const result = await createRoutine({
+          gymId: isAdmin ? gymId : undefined,
           name,
           description: description || undefined,
           dayLabel: dayLabel || undefined,
@@ -88,6 +100,22 @@ export function NewRoutineClient({ exercises }: { exercises: Exercise[] }) {
       <div className="space-y-5">
         <div className="card-olimpo rounded-2xl p-6 space-y-4">
           <h2 className="font-semibold text-olimpo-text">Información de la rutina</h2>
+          {isAdmin && (
+            <div>
+              <label className="block text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider mb-1.5">Sede *</label>
+              <select
+                value={gymId}
+                onChange={(e) => setGymId(e.target.value)}
+                required
+                className="w-full bg-olimpo-bg border border-olimpo-surface-light rounded-lg px-3 py-2.5 text-olimpo-text focus:outline-none focus:border-olimpo-gold text-sm"
+              >
+                {gyms.length === 0 && <option value="">Sin sedes disponibles</option>}
+                {gyms.map((g) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-olimpo-text-muted uppercase tracking-wider mb-1.5">Nombre *</label>
             <input
